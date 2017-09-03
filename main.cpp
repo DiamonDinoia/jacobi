@@ -1,5 +1,6 @@
 #include <iostream>
 #include "jacobi.h"
+#include "jacobi_ff.h"
 
 using namespace std;
 
@@ -20,13 +21,20 @@ int main() {
         }
     }
     vector<double> terms;
-    for (int i = 0; i < 4; ++i) {
-        terms.emplace_back(term[i]);
+    for (double &i : term) {
+        terms.emplace_back(i);
     }
     vector<double> solutions = serial_jacobi(coefficients, terms, 1000, 0.0);
+    vector<double> solution2 = par_for_jacobi(coefficients, terms, 1000, 0.0, 8);
 
     cout << "solution: ";
     for (auto &sol: solutions) {
+        cout << sol << " ";
+    }
+    cout << endl;
+
+    cout << "solution2: ";
+    for (auto &sol: solution2) {
         cout << sol << " ";
     }
     cout << endl;
