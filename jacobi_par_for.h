@@ -1,26 +1,29 @@
 //
-// Created by marco on 9/1/17.
+// Created by marco on 9/5/17.
 //
 
-#ifndef JACOBI_JACOBI_H
-#define JACOBI_JACOBI_H
+#ifndef JACOBI_JACOBI_PAR_FOR_H
+#define JACOBI_JACOBI_PAR_FOR_H
 
+#include <ff/parallel_for.hpp>
 #include <vector>
 #include "utils.h"
-
+#include <iostream>
 
 template<typename T>
-std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
-                             const ulong iterations, const T tolerance) {
+std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
+                              const ulong iterations, const T tolerance, const ulong workers) {
 
     std::vector<T> old_solutions(coefficients.size(), (tolerance - tolerance));
     std::vector<T> solutions(coefficients.size(), (tolerance - tolerance));
     T error;
+    ff::ParallelFor pf(workers);
 
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
         //calculate solutions
-        for (ulong i = 0; i < solutions.size(); ++i)
+        pf.parallel_for(0, solutions.size(), [&](const ulong i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
+        }, workers);
 
         // check the error
         error = abs(solutions[0] - old_solutions[0]);
@@ -39,4 +42,4 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
     return solutions;
 }
 
-#endif //JACOBI_JACOBI_H
+#endif //JACOBI_JACOBI_PAR_FOR_H

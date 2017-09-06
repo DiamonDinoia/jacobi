@@ -5,6 +5,10 @@
 #ifndef JACOBI_UTILS_H
 #define JACOBI_UTILS_H
 
+#include <vector>
+
+typedef unsigned long ulong;
+
 template<typename T>
 inline T max(T a, T b) { return (a > b) ? a : b; }
 
