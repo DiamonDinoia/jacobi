@@ -5,7 +5,7 @@
 #ifndef JACOBI_JACOBI_THREAD_H
 #define JACOBI_JACOBI_THREAD_H
 
-#include "utils.h"
+#include "utils.hpp"
 #include <vector>
 
 std::vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,

@@ -2,10 +2,10 @@
 
 #include <iostream>
 
-#include "jacobi.h"
-#include "jacobi_map.h"
-#include "jacobi_par_for.h"
-#include "jacobi_thread.h"
+#include "jacobi.hpp"
+#include "jacobi_map.hpp"
+#include "jacobi_par_for.hpp"
+#include "jacobi_thread.hpp"
 
 using namespace std;
 

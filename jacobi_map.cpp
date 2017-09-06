@@ -2,7 +2,7 @@
 // Created by marco on 9/2/17.
 //
 
-#include "jacobi_map.h"
+#include "jacobi_map.hpp"
 #include "ff/map.hpp"
 
 using namespace std;

@@ -4,11 +4,11 @@
 
 #include <atomic>
 #include <iostream>
-#include "jacobi_thread.h"
+#include "jacobi_thread.hpp"
 #include <mutex>
 #include <condition_variable>
 #include <thread>
-#include "barrier.h"
+#include "barrier.hpp"
 
 using namespace std;
 
