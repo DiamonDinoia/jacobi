@@ -16,13 +16,12 @@ namespace {
 
     vector<std::vector<float>> coefficients;
     vector<float> terms;
-    ulong iterations;
+    ulong max_iterations;
     float tolerance;
 
     typedef struct job {
         ulong start;
         ulong stop;
-
         job(ulong start, ulong stop) : start(start), stop(stop) {};
     } job;
 
@@ -68,12 +67,14 @@ namespace {
     vector<float> errors;
     float error_computed;
 
+    ulong iteration_computed;
 
     inline void task(const ulong id, vector<float> &solutions, vector<float> &old_solutions) {
         flag.clear();
-        for (ulong iteration = 0; iteration < iterations; ++iteration) {
+        for (ulong iteration = 0; iteration < max_iterations; ++iteration) {
             //calculate solutions
             errors[id] = 0.f;
+#pragma ivdep
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
                 solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
                 errors[id] += abs(solutions[i] - old_solutions[i]);
@@ -82,6 +83,7 @@ namespace {
             barrier->wait();
             if (!flag.test_and_set()) {
                 error_computed = 0.f;
+#pragma ivdep
                 for (ulong i = 0; i < nWorkers; ++i) {
                     error_computed += errors[i];
                 }
@@ -91,7 +93,7 @@ namespace {
             }
             barrier->wait();
             if (termination) {
-                if (!flag.test_and_set())iterations = iteration;
+                if (!flag.test_and_set()) iteration_computed = iteration;
                 break;
             }
         }
@@ -105,7 +107,8 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
 
     coefficients = _coefficients;
     terms = _terms;
-    iterations = _iterations;
+    max_iterations = _iterations;
+    iteration_computed = _iterations;
     tolerance = _tolerance;
     nWorkers = _nWorkers;
 
@@ -114,12 +117,14 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
     std::vector<float> solutions(terms.size(), (tolerance - tolerance));
     std::vector<float> old_solutions(terms.size(), (tolerance - tolerance));
     vector<thread> threads;
-    for (int i = 0; i < nWorkers; ++i) errors.emplace_back(0.f);
-    for (ulong i = 0; i < nWorkers; ++i) {
+    for (int i = 0; i < nWorkers; ++i)
+        errors.emplace_back(0.f);
+    for (ulong i = 0; i < nWorkers; ++i)
         threads.emplace_back(thread(task, i, ref(solutions), ref(old_solutions)));
-    }
     for (int i = 0; i < nWorkers; ++i) threads[i].join();
-    std::cout << "iterations computed: " << iterations << " error: " << error_computed << std::endl;
+    std::cout << "iterations computed: " << iteration_computed << " error: " << error_computed << std::endl;
     delete (barrier);
+    errors.clear();
+    works.clear();
     return solutions;
 }

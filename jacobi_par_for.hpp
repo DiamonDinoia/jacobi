@@ -18,6 +18,12 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
     std::vector<T> solutions(coefficients.size(), (tolerance - tolerance));
     T error;
     ff::ParallelFor pf(workers);
+//    auto reduce = [&](float &var, const ulong i) {
+//        var += abs(solutions[i] - old_solutions[i]);
+//    };
+//    auto reduce2 = [&](const ulong i, float &var) {
+//        var += abs(solutions[i] - old_solutions[i]);
+//    };
 
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
         //calculate solutions
@@ -26,16 +32,20 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
         }, workers);
 
         // check the error
-        error = abs(solutions[0] - old_solutions[0]);
-        old_solutions[0] = solutions[0];
-        for (int i = 1; i < solutions.size(); ++i) {
-            error = max(abs(solutions[i] - old_solutions[i]), error);
+        error = 0.f;
+#pragma ivdep
+        for (int i = 0; i < solutions.size(); ++i) {
+            error += abs(solutions[i] - old_solutions[i]);
             old_solutions[i] = solutions[i];
         }
-        if (error <= tolerance) {
+//        again it generates a segmentation fault
+//        pf.parallel_reduce(error, 0.f, 0, solutions.size(), reduce2, reduce, workers);
+
+        if (error / solutions.size() <= tolerance) {
             std::cout << "iteration computed: " << iteration << " error: " << error << std::endl;
             return solutions;
         }
+
     }
 
     std::cout << "iteration computed: " << iterations << " error: " << error << std::endl;

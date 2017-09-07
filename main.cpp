@@ -9,62 +9,148 @@
 
 using namespace std;
 
-int main() {
+const auto size_string = "size:";
+const auto matrix_string = "matrix:";
+const auto solution_string = "solution:";
+const auto terms_string = "terms:";
 
-    const ulong size = 4;
-
-    auto matrix = new float *[4];
-    matrix[0] = new float[4]{10., -1., 2., 0.};
-    matrix[1] = new float[4]{-1., 11., -1., 3.};
-    matrix[2] = new float[4]{2., -1., 10., -1.};
-    matrix[3] = new float[4]{0.0, 3., -1., 8.};
-
-    auto term = new float[4]{6., 25., -11., 15.};
+ulong size;
+vector<vector<float>> matrix;
+vector<float> terms;
+vector<float> solution;
 
 
-    vector<vector<float>> coefficients(4, vector<float>(4, 0.));
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            coefficients[i][j] = matrix[i][j];
+void parse_input(const string &filename) {
+    ifstream file(filename);
+    string str;
+    file >> str >> size;
+    if (str != size_string) {
+        cout << "Size unknown aborting...";
+        exit(1);
+    }
+    file >> str;
+    if (str != matrix_string) {
+        cout << "Matrix not present aborting...";
+        exit(1);
+    }
+    float value;
+    for (ulong i = 0; i < size; ++i) {
+        matrix.emplace_back(vector<float>());
+        for (ulong j = 0; j < size; ++j) {
+            file >> value;
+            matrix[i].emplace_back(value);
         }
     }
-    vector<float> terms;
-
-    for (int i = 0; i < size; ++i) {
-        terms.emplace_back(term[i]);
+    file >> str;
+    if (str != terms_string) {
+        cout << "Terms not present aborting...";
+        exit(1);
     }
+    for (ulong j = 0; j < size; ++j) {
+        file >> value;
+        terms.emplace_back(value);
+    }
+    file >> str;
+    if (str != solution_string) {
+        cout << "Solution not present aborting...";
+        exit(1);
+    }
+    for (ulong j = 0; j < size; ++j) {
+        file >> value;
+        solution.emplace_back(value);
+    }
+    file.close();
+}
 
-    vector<float> solutions = serial_jacobi(coefficients, terms, 1000, 0.0f);
 
-    cout << "solution: ";
-    for (auto &sol: solutions) {
+void print() {
+    cout << matrix_string << ' ' << endl;
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+            cout << matrix[i][j] << ' ';
+        }
+        cout << endl;
+    }
+    cout << terms_string << ' ' << endl;
+    for (int i = 0; i < size; ++i) {
+        cout << terms[i] << ' ';
+    }
+    cout << endl;
+    cout << solution_string << ' ' << endl;
+    for (int i = 0; i < size; ++i) {
+        cout << solution[i] << ' ';
+    }
+    cout << endl;
+}
+
+void print_solution(const vector<float> &solution, const string &name) {
+    cout << name << ' ';
+    for (auto &sol: solution) {
         cout << sol << " ";
     }
     cout << endl;
+}
 
-    float *solution2 = jacobi_map(matrix, term, size, 1000, 0.0, 8);
+ulong workers = 8;
+ulong max_iterations = 1000;
+float tolerance = 0.f;
 
-    cout << "solution2: ";
-    for (int i = 0; i < size; ++i) {
-        cout << solution2[i] << " ";
 
+int main(const int argc, const char *argv[]) {
+
+    if (argc < 3) {
+        cout << "Please insert at least one file name, the number of workers and the number of max_iterations";
+        exit(1);
     }
-    cout << endl;
-    vector<float> solution3 = jacobi_par_for(coefficients, terms, 1000, 0.f, 8);
+    workers = (ulong) strtol(argv[1], nullptr, 10);
+    max_iterations = (ulong) strtol(argv[2], nullptr, 10);
+    tolerance = strtof(argv[3], nullptr);
 
-    cout << "solution3: ";
-    for (int i = 0; i < size; ++i) {
-        cout << solution3[i] << " ";
 
+    for (int arg = 4; arg < argc; ++arg) {
+        parse_input(argv[arg]);
+//        print();
+        auto test = new float *[size];
+        for (ulong i = 0; i < size; ++i) {
+            test[i] = &matrix[i][0];
+        }
+
+
+        auto start = Time::now();
+        auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);
+        auto end = Time::now();
+
+        dsec serial_solution_time = end - start;
+        cout << "serial solution total time: " << serial_solution_time.count() << endl;
+        print_solution(serial_solution, "serial solution: ");
+
+        start = Time::now();
+        auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
+        end = Time::now();
+
+        dsec parallel_for_solution_time = end - start;
+        cout << "parallel for total time: " << parallel_for_solution_time.count() << endl;
+        print_solution(par_for_solution, "parallel for solution: ");
+
+        start = Time::now();
+        auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
+        end = Time::now();
+
+        dsec thread_solution_time = end - start;
+        cout << "thread solution total time: " << thread_solution_time.count() << endl;
+        print_solution(thread_solution, "thread solution: ");
+
+        start = Time::now();
+        auto map_solution = jacobi_map(test, &terms[0], size, max_iterations, tolerance, workers);
+        end = Time::now();
+
+        dsec map_solution_time = end - start;
+        cout << "map solution total time: " << map_solution_time.count() << endl;
+        print_solution(vector<float>(map_solution, map_solution + size), "map solution: ");
+
+        matrix.clear();
+        terms.clear();
+        solution.clear();
     }
-    cout << endl;
-
-
-    auto solution4 = jacobi_thread(coefficients, terms, 1000, 0.f, 8);
-    cout << "solution4: ";
-    for (auto &sol: solution4) {
-        cout << sol << " ";
-    }
-    cout << endl;
     return 0;
 }
