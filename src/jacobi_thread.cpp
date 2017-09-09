@@ -32,8 +32,6 @@ namespace {
         nWorkers = min(nWorkers, terms.size());
         ulong slice = terms.size() / nWorkers;
         ulong residual = terms.size() % nWorkers;
-//        cout << "size: " << terms.size() << " workers: " << nWorkers << endl;
-//        cout << "slice: " << slice << " residual: " << residual << endl;
         for (ulong i = 0; i < nWorkers; ++i) {
             works.emplace_back(job(i * slice, (i + 1) * slice));
         }
@@ -52,9 +50,6 @@ namespace {
                 works[i].stop = works[i].start + slice;
             }
         }
-//        for (auto &w : works) {
-//            cout << "first:" << w.start << " last: " << w.stop << endl;
-//        }
     }
 
 
@@ -64,39 +59,38 @@ namespace {
     spinning_barrier *barrier = nullptr;
 
 
-    vector<float> errors;
-    float error_computed;
+    float errors = 0.f;
 
     ulong iteration_computed;
 
     inline void task(const ulong id, vector<float> &solutions, vector<float> &old_solutions) {
         flag.clear();
-        for (ulong iteration = 0; iteration < max_iterations; ++iteration) {
+        ulong iteration;
+        float myerror;
+        for (iteration = 0; iteration < max_iterations; ++iteration) {
             //calculate solutions
-            errors[id] = 0.f;
+            myerror = 0.f;
+            errors = 0.f;
+            barrier->wait();
 #pragma ivdep
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
                 solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
-                errors[id] += abs(solutions[i] - old_solutions[i]);
+                myerror += abs(solutions[i] - old_solutions[i]);
                 old_solutions[i] = solutions[i];
             }
+            while (!flag.test_and_set(std::memory_order_relaxed)) {}
+            errors += myerror;
+            flag.clear();
             barrier->wait();
             if (!flag.test_and_set()) {
-                error_computed = 0.f;
-#pragma ivdep
-                for (ulong i = 0; i < nWorkers; ++i) {
-                    error_computed += errors[i];
-                }
-                error_computed /= (float) solutions.size();
-                termination = error_computed <= tolerance;
+                errors /= (float) solutions.size();
+                termination = errors <= tolerance;
                 flag.clear();
             }
             barrier->wait();
-            if (termination) {
-                if (!flag.test_and_set()) iteration_computed = iteration;
-                break;
-            }
+            if (termination)break;
         }
+        if (!flag.test_and_set()) iteration_computed = iteration;
     }
 
 
@@ -117,14 +111,14 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
     std::vector<float> solutions(terms.size(), (tolerance - tolerance));
     std::vector<float> old_solutions(terms.size(), (tolerance - tolerance));
     vector<thread> threads;
-    for (int i = 0; i < nWorkers; ++i)
-        errors.emplace_back(0.f);
     for (ulong i = 0; i < nWorkers; ++i)
         threads.emplace_back(thread(task, i, ref(solutions), ref(old_solutions)));
+    auto start = Time::now();
     for (int i = 0; i < nWorkers; ++i) threads[i].join();
-    std::cout << "iterations computed: " << iteration_computed << " error: " << error_computed << std::endl;
+    auto end = Time::now();
+    std::cout << "thread jacobi | iterations computed: " << iteration_computed << " error: " << errors << std::endl;
+    std::cout << "thread jacobi | computation time: " << dsec(end - start).count() << std::endl;
     delete (barrier);
-    errors.clear();
     works.clear();
     return solutions;
 }

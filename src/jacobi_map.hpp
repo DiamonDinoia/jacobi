@@ -9,7 +9,7 @@
 
 float *jacobi_map(float **_coefficients, float *_terms, const ulong _size, const ulong _iterations,
                   const float _tolerance,
-                  const ulong nworkers);
+                  const ulong _nworkers);
 
 
 #endif //JACOBI_JACOBI_MAP_H

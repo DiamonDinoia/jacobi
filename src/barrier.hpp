@@ -10,7 +10,7 @@
 
 class spinning_barrier {
 public:
-    spinning_barrier(unsigned long n) : n_(n), nwait_(0), step_(0) {}
+    explicit spinning_barrier(unsigned long n) : n_(n), nwait_(0), step_(0) {}
 
     inline bool wait() {
         unsigned long step = step_.load();
@@ -34,7 +34,7 @@ protected:
     /* Number of threads currently spinning.  */
     std::atomic<unsigned long> nwait_;
 
-    /* Number of barrier syncronizations completed so far,
+    /* Number of barrier synchronizations completed so far,
      * it's OK to wrap.  */
     std::atomic<unsigned long> step_;
 };

@@ -97,19 +97,20 @@ float tolerance = 0.f;
 
 
 int main(const int argc, const char *argv[]) {
-
+//    ofstream out("results_local.txt");
+//    cout.rdbuf(out.rdbuf());
     if (argc < 3) {
-        cout << "Please insert at least one file name, the number of workers and the number of max_iterations";
+        cout << "Please insert at least one file name, the number of workers and the number of max_iterations" << endl;
         exit(1);
     }
     workers = (ulong) strtol(argv[1], nullptr, 10);
     max_iterations = (ulong) strtol(argv[2], nullptr, 10);
     tolerance = strtof(argv[3], nullptr);
-
+    cout << "workers " << workers << endl;
 
     for (int arg = 4; arg < argc; ++arg) {
+        cout << "RUN: -----------------> " << argv[arg] << endl;
         parse_input(argv[arg]);
-//        print();
         auto test = new float *[size];
         for (ulong i = 0; i < size; ++i) {
             test[i] = &matrix[i][0];
@@ -121,32 +122,32 @@ int main(const int argc, const char *argv[]) {
         auto end = Time::now();
 
         dsec serial_solution_time = end - start;
-        cout << "serial solution total time: " << serial_solution_time.count() << endl;
-        print_solution(serial_solution, "serial solution: ");
+        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
+        print_solution(serial_solution, "serial jacobi | solution: ");
 
         start = Time::now();
         auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
         end = Time::now();
 
         dsec parallel_for_solution_time = end - start;
-        cout << "parallel for total time: " << parallel_for_solution_time.count() << endl;
-        print_solution(par_for_solution, "parallel for solution: ");
+        cout << "parallel for | total time: " << parallel_for_solution_time.count() << endl;
+        print_solution(par_for_solution, "parallel for | solution: ");
 
         start = Time::now();
         auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
         end = Time::now();
 
         dsec thread_solution_time = end - start;
-        cout << "thread solution total time: " << thread_solution_time.count() << endl;
-        print_solution(thread_solution, "thread solution: ");
+        cout << "thread jacobi | total time: " << thread_solution_time.count() << endl;
+        print_solution(thread_solution, "thread jacobi | solution: ");
 
         start = Time::now();
         auto map_solution = jacobi_map(test, &terms[0], size, max_iterations, tolerance, workers);
         end = Time::now();
 
         dsec map_solution_time = end - start;
-        cout << "map solution total time: " << map_solution_time.count() << endl;
-        print_solution(vector<float>(map_solution, map_solution + size), "map solution: ");
+        cout << "map jacobi | total time: " << map_solution_time.count() << endl;
+        print_solution(vector<float>(map_solution, map_solution + size), "map jacobi | solution: ");
 
         matrix.clear();
         terms.clear();

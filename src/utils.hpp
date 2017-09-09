@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <chrono>
+#include <atomic>
 
 typedef unsigned long ulong;
 
@@ -30,6 +31,14 @@ inline T solution_find(const std::vector<T> row, const std::vector<T> solutions,
 typedef std::chrono::high_resolution_clock Time;
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::duration<double> dsec;
+
+
+template<typename T>
+inline T my_atomic_fetch_add(std::atomic<T> &obj, T arg) {
+    T expected = obj.load();
+    while (!std::atomic_compare_exchange_weak(&obj, &expected, expected + arg));
+    return expected;
+}
 
 
 #endif //JACOBI_UTILS_H

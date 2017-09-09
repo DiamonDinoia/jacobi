@@ -21,8 +21,9 @@ def generate_matrix(size, name):
 
 i = 0
 sizes = [4, 64, 512, 1024, 2048, 4096]
+np.random.seed(2283588029)
 
 for size in sizes:
     generate_matrix(size, 'matrix' + str(i) + '.txt')
-    i += 1
     print 'generated matrix number: ', i, 'size: ', size
+    i += 1
