@@ -29,15 +29,25 @@ namespace {
     ulong nWorkers;
 
     void scheduler() {
+        works.clear();
         nWorkers = min(nWorkers, terms.size());
+//        cerr << "workers " << nWorkers << endl;
+//        cerr << "size " << terms.size() << endl;
         ulong slice = terms.size() / nWorkers;
-        ulong residual = terms.size() % nWorkers;
+        long residual = terms.size() - (nWorkers * slice);
+//        cerr << "slice " << slice << endl;
+//        cerr << "residual " << residual << endl;
         for (ulong i = 0; i < nWorkers; ++i) {
             works.emplace_back(job(i * slice, (i + 1) * slice));
         }
 
-        if (residual == 0) return;
-
+        if (residual == 0) {
+//            for (int i = 0; i < nWorkers; ++i) {
+//                cerr << "start " << works[i].start << endl;
+//                cerr << "stop " << works[i].stop << endl;
+//            }
+            return;
+        }
         for (ulong i = 0; i < nWorkers; ++i) {
             if (residual-- > 0) {
                 if (i != 0) {
@@ -50,6 +60,11 @@ namespace {
                 works[i].stop = works[i].start + slice;
             }
         }
+//        for (int i = 0; i < nWorkers; ++i) {
+//            cerr << "start " << works[i].start << endl;
+//            cerr << "stop " << works[i].stop << endl;
+//        }
+
     }
 
 
@@ -105,6 +120,7 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
     iteration_computed = _iterations;
     tolerance = _tolerance;
     nWorkers = _nWorkers;
+    termination = false;
 
     scheduler();
     barrier = new spinning_barrier(nWorkers);
@@ -118,7 +134,8 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
     auto end = Time::now();
     std::cout << "thread jacobi | iterations computed: " << iteration_computed << " error: " << errors << std::endl;
     std::cout << "thread jacobi | computation time: " << dsec(end - start).count() << std::endl;
+    flag.clear();
+    threads.clear();
     delete (barrier);
-    works.clear();
     return solutions;
 }

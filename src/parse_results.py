@@ -125,7 +125,8 @@ def calculate_metrics(nworkers):
         metrics[matrix][_map + ' ' + efficiency] = metrics[matrix][ideal_time] / v[map_jacobi][total_time]
 
     for x in metrics[key].keys():
-        labels.append(x)
+        if not x in labels:
+            labels.append(x)
     return pd.DataFrame(metrics)
 
 
@@ -153,13 +154,14 @@ sizes = ['4', '64', '512', '1024', '2048', '4096']
 
 def bar_graph_time(frame):
     col = [x for x in labels if 'time' in x]
-    frame[col].plot(kind='bar', rot=0)
+    frame[col].plot(kind='bar', rot=0, width=0.85)
     col = [x.replace(' time', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Time (s)')
+    # plt.xlabel('Threads')
     plt.xlabel('Matrix size')
     plt.savefig('time')
-    # plt.show()
+    plt.show()
 
 
 def bar_graph_parallel_benchmark(frame):
@@ -168,20 +170,22 @@ def bar_graph_parallel_benchmark(frame):
     col = [x.replace(' time', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Time (s)')
+    # plt.xlabel('Threads')
     plt.xlabel('Matrix size')
     plt.savefig('benchmark')
-    # plt.show()
+    plt.show()
 
 
 def speedup_graph(frame):
     col = [x for x in labels if 'speedup' in x]
-    x = frame[col].plot(kind='line', rot=0, grid=True, linewidth=3.0, color=['blue', 'green', 'red', 'black'])
+    frame[col].plot(kind='line', rot=0, grid=True, linewidth=3.0, color=['blue', 'green', 'red', 'black'])
     col = [x.replace(' speedup', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Speedup')
+    # plt.xlabel('Threads')
     plt.xlabel('Matrix size')
     plt.savefig('speedup')
-    # plt.show()
+    plt.show()
 
 
 def efficiency_graph(frame):
@@ -190,11 +194,18 @@ def efficiency_graph(frame):
     col = [x.replace(' efficiency', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Efficiency')
+    # plt.xlabel('Threads')
     plt.xlabel('Matrix size')
     axes = plt.gca()
-    axes.set_ylim([0, 1])
+    # axes.set_ylim([0, 2])
     plt.savefig('efficiency')
-    # plt.show()
+    plt.show()
+
+
+# threads = ['1', '2', '4', '8', '16', '32', '64']
+# threads = ['1', '2', '4', '8']
+
+# files = [''.join(['results', x, '.txt']) for x in threads]
 
 
 def main(argv):
@@ -204,15 +215,21 @@ def main(argv):
     options, _ = parser.parse_args(argv)
     nworkers = read_file(options.infile)
     frame = calculate_metrics(nworkers)
+    # frame.columns = sizes
+    # frame = pd.DataFrame()
+    # for f in files:
+    #     data.clear()
+    #     nworkers = read_file(f)
+    #     frame = pd.concat([frame, calculate_metrics(nworkers)], axis=1)
+    # frame.columns = threads
     write_dataframe(options.outfile, frame)
     write_tolatex('latex' + options.outfile, frame)
-    frame.columns = sizes
+    print frame
     frame = frame.transpose()
     bar_graph_time(frame)
     bar_graph_parallel_benchmark(frame)
     speedup_graph(frame)
     efficiency_graph(frame)
-    # print frame.transpose()
     return 0
 
 

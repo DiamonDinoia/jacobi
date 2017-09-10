@@ -97,7 +97,7 @@ float tolerance = 0.f;
 
 
 int main(const int argc, const char *argv[]) {
-//    ofstream out("results_local.txt");
+//    ofstream out("results_local_thread.txt");
 //    cout.rdbuf(out.rdbuf());
     if (argc < 3) {
         cout << "Please insert at least one file name, the number of workers and the number of max_iterations" << endl;
@@ -106,7 +106,6 @@ int main(const int argc, const char *argv[]) {
     workers = (ulong) strtol(argv[1], nullptr, 10);
     max_iterations = (ulong) strtol(argv[2], nullptr, 10);
     tolerance = strtof(argv[3], nullptr);
-    cout << "workers " << workers << endl;
 
     for (int arg = 4; arg < argc; ++arg) {
         cout << "RUN: -----------------> " << argv[arg] << endl;
@@ -115,6 +114,7 @@ int main(const int argc, const char *argv[]) {
         for (ulong i = 0; i < size; ++i) {
             test[i] = &matrix[i][0];
         }
+        cout << "workers " << workers << endl;
 
 
         auto start = Time::now();
@@ -124,6 +124,7 @@ int main(const int argc, const char *argv[]) {
         dsec serial_solution_time = end - start;
         cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
         print_solution(serial_solution, "serial jacobi | solution: ");
+
 
         start = Time::now();
         auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
