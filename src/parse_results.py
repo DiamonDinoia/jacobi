@@ -218,7 +218,7 @@ def main(argv):
     options, _ = parser.parse_args(argv)
     nworkers = read_file(options.infile)
     frame = calculate_metrics(nworkers)
-    frame.columns = sizes
+    # frame.columns = sizes
     # frame = pd.DataFrame()
     # for f in files:
     #     data.clear()

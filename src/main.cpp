@@ -1,4 +1,3 @@
-//#include "jacobi_ff.h"
 
 #include <iostream>
 
