@@ -124,9 +124,9 @@ def calculate_metrics(nworkers):
         metrics[matrix][_map + ' ' + error] = check_error(v[map_jacobi][solution], correct_solution[matrix])
         metrics[matrix][_map + ' ' + efficiency] = metrics[matrix][ideal_time] / v[map_jacobi][total_time]
 
-    for x in metrics[key].keys():
-        if not x in labels:
-            labels.append(x)
+    for y in metrics[key].keys():
+        if y not in labels:
+            labels.append(y)
     return pd.DataFrame(metrics)
 
 
@@ -158,8 +158,8 @@ def bar_graph_time(frame):
     col = [x.replace(' time', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Time (s)')
-    # plt.xlabel('Threads')
-    plt.xlabel('Matrix size')
+    plt.xlabel('Threads')
+    # plt.xlabel('Matrix size')
     plt.savefig('time')
     plt.show()
 
@@ -170,8 +170,8 @@ def bar_graph_parallel_benchmark(frame):
     col = [x.replace(' time', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Time (s)')
-    # plt.xlabel('Threads')
-    plt.xlabel('Matrix size')
+    plt.xlabel('Threads')
+    # plt.xlabel('Matrix size')
     plt.savefig('benchmark')
     plt.show()
 
@@ -182,8 +182,8 @@ def speedup_graph(frame):
     col = [x.replace(' speedup', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Speedup')
-    # plt.xlabel('Threads')
-    plt.xlabel('Matrix size')
+    plt.xlabel('Threads')
+    # plt.xlabel('Matrix size')
     plt.savefig('speedup')
     plt.show()
 
@@ -194,18 +194,21 @@ def efficiency_graph(frame):
     col = [x.replace(' efficiency', '') for x in col]
     plt.legend(col, loc='best')
     plt.ylabel('Efficiency')
-    # plt.xlabel('Threads')
-    plt.xlabel('Matrix size')
+    plt.xlabel('Threads')
+    # plt.xlabel('Matrix size')
     axes = plt.gca()
     # axes.set_ylim([0, 2])
     plt.savefig('efficiency')
     plt.show()
 
 
-# threads = ['1', '2', '4', '8', '16', '32', '64']
+threads = ['1', '2', '4', '8', '16', '32', '64']
 # threads = ['1', '2', '4', '8']
 
-# files = [''.join(['results', x, '.txt']) for x in threads]
+files = [''.join(['results', x, '.txt']) for x in threads]
+
+
+# files = [''.join(['results','_local_gcc', x, '.txt']) for x in threads]
 
 
 def main(argv):
@@ -215,13 +218,14 @@ def main(argv):
     options, _ = parser.parse_args(argv)
     nworkers = read_file(options.infile)
     frame = calculate_metrics(nworkers)
-    # frame.columns = sizes
+    frame.columns = sizes
     # frame = pd.DataFrame()
     # for f in files:
     #     data.clear()
     #     nworkers = read_file(f)
     #     frame = pd.concat([frame, calculate_metrics(nworkers)], axis=1)
     # frame.columns = threads
+    pd.set_option('display.float_format', lambda x: '%f' % x)
     write_dataframe(options.outfile, frame)
     write_tolatex('latex' + options.outfile, frame)
     print frame

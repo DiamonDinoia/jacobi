@@ -15,9 +15,9 @@ const auto solution_string = "solution:";
 const auto terms_string = "terms:";
 
 ulong size;
-vector<vector<float>> matrix;
-vector<float> terms;
-vector<float> solution;
+vector<vector<float>> matrix __attribute__((aligned(64)));
+vector<float> terms __attribute__((aligned(64)));
+vector<float> solution __attribute__((aligned(64)));
 
 
 void parse_input(const string &filename) {
@@ -97,7 +97,7 @@ float tolerance = 0.f;
 
 
 int main(const int argc, const char *argv[]) {
-//    ofstream out("results_local_thread.txt");
+//    ofstream out("tmp.txt");
 //    cout.rdbuf(out.rdbuf());
     if (argc < 3) {
         cout << "Please insert at least one file name, the number of workers and the number of max_iterations" << endl;
@@ -115,7 +115,6 @@ int main(const int argc, const char *argv[]) {
             test[i] = &matrix[i][0];
         }
         cout << "workers " << workers << endl;
-
 
         auto start = Time::now();
         auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);

@@ -35,20 +35,28 @@ namespace {
 
     atomic_flag flag;
 
+    /**
+     * same as the serial implementation, the only difference is that each worker computes a subset of the soluton
+     */
     struct mapWorker : ff::ff_Map<task_t, task_t, float> {
         task_t *svc(task_t *input) override {
             float error = 0.f;
-            this->parallel_for(0, size, [&input, &error](const ulong i) {
+            // computes the solutions
+            this->parallel_for(0, size, [&input](const ulong i) {
                 float tmp = terms[i];
-#pragma ivdep
+#pragma simd
                 for (ulong j = 0; j < size; ++j) {
                     if (i == j) continue;
                     tmp -= (input->old_solutions[j]) * (coefficients[i][j]);;
                 }
                 input->solutions[i] = tmp / (coefficients[i][i]);
+            }, nworkers);
+            // calculate the error
+            this->parallel_for(0, size, [&input, &error](const ulong i) {
                 error += abs(input->solutions[i] - input->old_solutions[i]);
                 input->old_solutions[i] = input->solutions[i];
             }, nworkers);
+            // serial instruction
             input->error += error;
 
             ff_send_out(input);
@@ -58,7 +66,10 @@ namespace {
     };
 
 
-
+    /**
+     * Just pass the results back to the emitter.
+     * I think there is a way to not use this stage I did not find it.
+     */
     struct receiver : ff::ff_monode_t<task_t> {
         task_t *svc(task_t *input) override {
             ff_send_out_to(input, 0);
@@ -73,9 +84,15 @@ namespace {
     auto end_time = Time::now();
 
 
-
+    /**
+     * The emitter:
+     *  First time initializes the data structures and send it to the workers
+     *  Each iteration checks the error and the number of iterations
+     *  Last time save the results, clean up the head and terminates the other stage
+     */
     struct generator : ff::ff_node_t<task_t> {
         task_t *svc(task_t *input) override {
+            // first time initialization
             if (input == nullptr) {
                 auto task = new task_t();
                 task->solutions = new float[size]{(tolerance - tolerance)};
@@ -85,13 +102,14 @@ namespace {
                 flag.clear();
                 return task;
             }
-
+            // check error and iterations
             ++iteration;
             errors = input->error / (float) size;
             if (errors > tolerance && iteration < max_iterations) {
                 input->error = 0.f;
                 return input;
             }
+            // save the solution and terminates
             end_time = Time::now();
             solution = input->solutions;
             delete (input->old_solutions);
@@ -116,17 +134,20 @@ float *jacobi_map(float **_coefficients, float *_terms, const ulong _size, const
     size = _size;
     iteration = 0;
     nworkers = _nworkers;
+    // creating the worker
 
     std::vector<std::unique_ptr<ff::ff_node>> workers;
     for (ulong i = 0; i < 1; ++i) {
         workers.push_back(ff::make_unique<mapWorker>());
     }
 
+    // fastflow core code
     ff::ff_Farm<task_t> farm(std::move(workers));
     generator myEmitter;
     receiver myReceiver;
     ff::ff_Pipe<task_t> pipe(myEmitter, farm, myReceiver);
     pipe.wrap_around();
+
     if (pipe.run_and_wait_end() < 0)
         std::cerr << "map jacobi ERROR running pipe" << std::endl;
     std::cout << "map jacobi | iterations computed: " << iteration << " error: " << errors << std::endl;
