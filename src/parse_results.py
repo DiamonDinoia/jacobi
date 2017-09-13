@@ -161,7 +161,7 @@ def bar_graph_time(frame):
     plt.xlabel('Threads')
     # plt.xlabel('Matrix size')
     plt.savefig('time')
-    plt.show()
+    # plt.show()
 
 
 def bar_graph_parallel_benchmark(frame):
@@ -173,7 +173,7 @@ def bar_graph_parallel_benchmark(frame):
     plt.xlabel('Threads')
     # plt.xlabel('Matrix size')
     plt.savefig('benchmark')
-    plt.show()
+    # plt.show()
 
 
 def speedup_graph(frame):
@@ -185,7 +185,7 @@ def speedup_graph(frame):
     plt.xlabel('Threads')
     # plt.xlabel('Matrix size')
     plt.savefig('speedup')
-    plt.show()
+    # plt.show()
 
 
 def efficiency_graph(frame):
@@ -199,13 +199,13 @@ def efficiency_graph(frame):
     axes = plt.gca()
     # axes.set_ylim([0, 2])
     plt.savefig('efficiency')
-    plt.show()
+    # plt.show()
 
 
-threads = ['1', '2', '4', '8', '16', '32', '64']
+# threads = ['1', '2', '4', '8', '16', '32', '64']
 # threads = ['1', '2', '4', '8']
 
-files = [''.join(['results', x, '.txt']) for x in threads]
+# files = [''.join(['results', x, '.txt']) for x in threads]
 
 
 # files = [''.join(['results','_local_gcc', x, '.txt']) for x in threads]

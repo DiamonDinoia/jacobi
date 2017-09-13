@@ -46,9 +46,9 @@ namespace {
                 float tmp = terms[i];
 #pragma simd
                 for (ulong j = 0; j < size; ++j) {
-                    if (i == j) continue;
-                    tmp -= (input->old_solutions[j]) * (coefficients[i][j]);;
+                    tmp -= (input->old_solutions[j] * coefficients[i][j]);;
                 }
+                tmp += (input->old_solutions[i] * coefficients[i][i]);
                 input->solutions[i] = tmp / (coefficients[i][i]);
             }, nworkers);
             // calculate the error
@@ -121,10 +121,8 @@ namespace {
 }
 
 
-
-float *jacobi_map(float **_coefficients, float *_terms, const ulong _size, const ulong _iterations,
-                  const float _tolerance,
-                  const ulong _nworkers) {
+float *jacobi_map(float **_coefficients, float *_terms, const ulong _size,
+                  const ulong _iterations, const float _tolerance, const ulong _nworkers) {
 
     //setting up global data structure
     coefficients = _coefficients;

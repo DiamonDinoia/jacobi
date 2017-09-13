@@ -30,10 +30,9 @@ inline  __attribute__((always_inline))
 T solution_find(const std::vector<T> row, const std::vector<T> solutions, T term, const ulong index) {
 #pragma simd
     for (int j = 0; j < row.size(); ++j) {
-        if (j == index) continue;
         term -= (solutions[j] * row[j]);
     }
-    return term / row[index];
+    return (term + (solutions[index] * row[index])) / row[index];
 }
 
 

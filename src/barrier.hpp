@@ -24,9 +24,8 @@ struct spinning_barrier {
         if (!--spaces) {
             spaces = count;
             ++generation;
-        } else {
-            while (generation == my_generation);
-        }
+        } else while (generation == my_generation);
+
     }
 };
 

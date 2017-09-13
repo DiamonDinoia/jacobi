@@ -25,6 +25,8 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
 
     std::vector<T> old_solutions __attribute__((aligned(64)));
     std::vector<T> solutions __attribute__((aligned(64)));
+
+
 #pragma ivdep
     for (int i = 0; i < coefficients.size(); ++i) {
         old_solutions.emplace_back(tolerance - tolerance);

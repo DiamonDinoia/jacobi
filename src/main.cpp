@@ -94,7 +94,6 @@ ulong workers = 8;
 ulong max_iterations = 1000;
 float tolerance = 0.f;
 
-
 int main(const int argc, const char *argv[]) {
 //    ofstream out("tmp.txt");
 //    cout.rdbuf(out.rdbuf());
