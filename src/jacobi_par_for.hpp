@@ -34,15 +34,16 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
         solutions.emplace_back(tolerance - tolerance);
     }
     auto error = tolerance - tolerance;
-    ff::ParallelFor pf;
+    ff::ParallelForReduce<T> pf;
 
     // code used by the reduce not needed now
-//    auto reduce = [&](float &var, const ulong i) {
-//        var += abs(solutions[i] - old_solutions[i]);
-//    };
-//    auto reduce2 = [&](const ulong i, float &var) {
-//        var += abs(solutions[i] - old_solutions[i]);
-//    };
+    auto reduce = [&solutions, &old_solutions](float &var, const ulong i) {
+        var += abs(solutions[i] - old_solutions[i]);
+
+    };
+    auto reduce2 = [&solutions, &old_solutions](const ulong i, float &var) {
+        var += abs(solutions[i] - old_solutions[i]);
+    };
     // synchronization flag, used in order to use lock-free mechanisms
     std::atomic_flag flag;
     flag.clear();
@@ -52,12 +53,17 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
         error = tolerance - tolerance;
         //calculate solutions using a parallel for
-        pf.parallel_for(0, solutions.size(), [&](const ulong i) {
+        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }, workers);
 
-        //compute the error using a parallel for
-        pf.parallel_for(0, solutions.size(), [&](const ulong i) {
+//        pf.parallel_reduce_static(error, 0.f, 0, solutions.size(), 1, 0, reduce2, reduce, workers);
+//
+//        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
+//            old_solutions[i] = solutions[i];
+//        }, workers);
+
+        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
             auto val = abs(solutions[i] - old_solutions[i]);
             old_solutions[i] = solutions[i];
             //busy waiting for the lock (spin-lock)
@@ -66,10 +72,6 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
             error += val;
             flag.clear();
         }, workers);
-
-//            Does not works, generates a segmentation fault
-//            pf.parallel_reduce(error, 0.f, 0, solutions.size(), reduce2, reduce, workers);
-
 
         //check the error and terminate in case
         if (error / solutions.size() <= tolerance) {

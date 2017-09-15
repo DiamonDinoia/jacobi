@@ -115,12 +115,12 @@ int main(const int argc, const char *argv[]) {
         cout << "workers " << workers << endl;
 
         auto start = Time::now();
-        auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);
+//        auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);
         auto end = Time::now();
 
         dsec serial_solution_time = end - start;
-        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
-        print_solution(serial_solution, "serial jacobi | solution: ");
+//        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
+//        print_solution(serial_solution, "serial jacobi | solution: ");
 
 
         start = Time::now();

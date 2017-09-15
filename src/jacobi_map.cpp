@@ -39,10 +39,18 @@ namespace {
      * same as the serial implementation, the only difference is that each worker computes a subset of the soluton
      */
     struct mapWorker : ff::ff_Map<task_t, task_t, float> {
+
+
         task_t *svc(task_t *input) override {
-            float error = 0.f;
             // computes the solutions
-            this->parallel_for(0, size, [&input](const ulong i) {
+            auto reduce = [&](float &var, const ulong i) {
+                var += abs(input->solutions[i] - input->old_solutions[i]);
+            };
+            auto reduce2 = [&](const ulong i, float &var) {
+                var += abs(input->solutions[i] - input->old_solutions[i]);
+
+            };
+            this->parallel_for_static(0, size, 1, 0, [&input](const ulong i) {
                 float tmp = terms[i];
 #pragma simd
                 for (ulong j = 0; j < size; ++j) {
@@ -51,14 +59,21 @@ namespace {
                 tmp += (input->old_solutions[i] * coefficients[i][i]);
                 input->solutions[i] = tmp / (coefficients[i][i]);
             }, nworkers);
+
+
+//            this->parallel_reduce_static(input->error, 0.f, 0, size, 1, 0, reduce2, reduce, nworkers);
+
+//            this->parallel_for_static(0, size, 1, 0, [&input](const ulong i) {
+//                input->old_solutions[i] = input->solutions[i];
+//            }, nworkers);
             // calculate the error
-            this->parallel_for(0, size, [&input, &error](const ulong i) {
+            this->parallel_for(0, size, 1, 0, [&input](const ulong i, float error = 0.f) {
                 error += abs(input->solutions[i] - input->old_solutions[i]);
                 input->old_solutions[i] = input->solutions[i];
+                while (!flag.test_and_set()) {};
+                input->error += error;
+                flag.clear();
             }, nworkers);
-            // serial instruction
-            input->error += error;
-
             ff_send_out(input);
             return GO_ON;
 
@@ -91,17 +106,21 @@ namespace {
      *  Last time save the results, clean up the head and terminates the other stage
      */
     struct generator : ff::ff_node_t<task_t> {
+
+        task_t *task = nullptr;
+
+        int svc_init() override {
+            task = new task_t();
+            task->solutions = new float[size]{(tolerance - tolerance)};
+            task->old_solutions = new float[size]{(tolerance - tolerance)};
+            task->error = 0.f;
+            start = Time::now();
+            flag.clear();
+        }
+
         task_t *svc(task_t *input) override {
             // first time initialization
-            if (input == nullptr) {
-                auto task = new task_t();
-                task->solutions = new float[size]{(tolerance - tolerance)};
-                task->old_solutions = new float[size]{(tolerance - tolerance)};
-                task->error = 0.f;
-                start = Time::now();
-                flag.clear();
-                return task;
-            }
+            if (input == nullptr) return task;
             // check error and iterations
             ++iteration;
             errors = input->error / (float) size;
@@ -116,7 +135,6 @@ namespace {
             delete (input);
             return EOS;
         }
-
     };
 }
 
