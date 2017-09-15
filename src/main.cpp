@@ -5,6 +5,7 @@
 #include "jacobi_map.hpp"
 #include "jacobi_par_for.hpp"
 #include "jacobi_thread.hpp"
+#include "jacobi_omp.hpp"
 
 using namespace std;
 
@@ -95,8 +96,8 @@ ulong max_iterations = 1000;
 float tolerance = 0.f;
 
 int main(const int argc, const char *argv[]) {
-//    ofstream out("tmp.txt");
-//    cout.rdbuf(out.rdbuf());
+    std::ofstream out("results.txt");
+    std::cout.rdbuf(out.rdbuf());
     if (argc < 3) {
         cout << "Please insert at least one file name, the number of workers and the number of max_iterations" << endl;
         exit(1);
@@ -115,12 +116,21 @@ int main(const int argc, const char *argv[]) {
         cout << "workers " << workers << endl;
 
         auto start = Time::now();
-//        auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);
+        auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);
         auto end = Time::now();
 
         dsec serial_solution_time = end - start;
-//        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
-//        print_solution(serial_solution, "serial jacobi | solution: ");
+        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
+        print_solution(serial_solution, "serial jacobi | solution: ");
+
+
+        start = Time::now();
+        auto omp_solution = jacobi_omp(matrix, terms, max_iterations, tolerance, workers);
+        end = Time::now();
+
+        dsec omp_solution_time = end - start;
+        cout << "openmp jacobi | total time: " << omp_solution_time.count() << endl;
+        print_solution(omp_solution, "openmp jacobi | solution: ");
 
 
         start = Time::now();

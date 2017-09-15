@@ -1,10 +1,11 @@
 //
-// Created by marco on 9/1/17.
+// Created by marco on 9/15/17.
 //
 
-#ifndef JACOBI_JACOBI_H
-#define JACOBI_JACOBI_H
+#ifndef JACOBI_JACOBI_OMP_HPP
+#define JACOBI_JACOBI_OMP_HPP
 
+#include <omp.h>
 #include <vector>
 #include "utils.hpp"
 #include <iostream>
@@ -20,13 +21,13 @@
  * @return solution vector
  */
 template<typename T>
-std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
-                             const ulong iterations, const T tolerance) {
+std::vector<T> jacobi_omp(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
+                          const ulong iterations, const T tolerance, const ulong workers) {
     std::vector<T> old_solutions __attribute__((aligned(64)));
     std::vector<T> solutions __attribute__((aligned(64)));
 
+    omp_set_num_threads((int) workers);
 
-#pragma ivdep
     for (int i = 0; i < coefficients.size(); ++i) {
         old_solutions.emplace_back(tolerance - tolerance);
         solutions.emplace_back(tolerance - tolerance);
@@ -36,12 +37,12 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
         //calculate solutions
         error = tolerance - tolerance;
-#pragma ivdep
+#pragma omp parallel for
         for (ulong i = 0; i < solutions.size(); ++i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }
         //compute the error
-#pragma simd
+#pragma omp parallel for reduction(+:error)
         for (ulong i = 0; i < solutions.size(); ++i) {
             error += abs(solutions[i] - old_solutions[i]);
             old_solutions[i] = solutions[i];
@@ -49,14 +50,14 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
         // check the error
         error /= solutions.size();
         if (error <= tolerance) {
-            std::cout << "serial jacobi | iterations computed: " << iteration << " error: " << error << std::endl;
+            std::cout << "openmp jacobi | iterations computed: " << iteration << " error: " << error << std::endl;
             return solutions;
         }
     }
     auto end = Time::now();
-    std::cout << "serial jacobi | iterations computed: " << iterations << " error: " << error << std::endl;
-    std::cout << "serial jacobi | computation time: " << dsec(end - start).count() << std::endl;
+    std::cout << "openmp jacobi | iterations computed: " << iterations << " error: " << error << std::endl;
+    std::cout << "openmp jacobi | computation time: " << dsec(end - start).count() << std::endl;
     return solutions;
 }
 
-#endif //JACOBI_JACOBI_H
+#endif //JACOBI_JACOBI_OMP_H

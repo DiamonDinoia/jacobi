@@ -9,8 +9,9 @@ serial_jacobi = 'serial jacobi'
 parallel_for = 'parallel for'
 thread_jacobi = 'thread jacobi'
 map_jacobi = 'map jacobi'
+omp_jacobi = 'openmp jacobi'
 
-algorithms = [serial_jacobi, parallel_for, thread_jacobi, map_jacobi]
+algorithms = [serial_jacobi, parallel_for, thread_jacobi, map_jacobi, omp_jacobi]
 
 iterations_computed = 'iterations computed'
 error = 'error'
@@ -76,6 +77,7 @@ _map = 'map'
 thread = 'thread'
 parallel_for = 'parallel for'
 ideal_time = 'ideal time'
+omp = 'omp'
 overhead = 'overhead'
 matrix_size = 'matrix size'
 efficiency = 'efficiency'
@@ -110,6 +112,13 @@ def calculate_metrics(nworkers):
             total_time]
         metrics[matrix][thread + ' ' + error] = check_error(v[thread_jacobi][solution], correct_solution[matrix])
         metrics[matrix][thread + ' ' + efficiency] = metrics[matrix][ideal_time] / v[thread_jacobi][total_time]
+
+        metrics[matrix][omp + ' ' + time] = v[omp_jacobi][total_time]
+        metrics[matrix][omp + ' ' + overhead] = v[omp_jacobi][total_time] - v[omp_jacobi][computation_time]
+        metrics[matrix][omp + ' ' + speedup] = metrics[matrix][sequential + ' ' + time] / v[omp_jacobi][
+            total_time]
+        metrics[matrix][omp + ' ' + error] = check_error(v[omp_jacobi][solution], correct_solution[matrix])
+        metrics[matrix][omp + ' ' + efficiency] = metrics[matrix][ideal_time] / v[omp_jacobi][total_time]
 
         metrics[matrix][parallel_for + ' ' + time] = v[parallel_for][total_time]
         metrics[matrix][parallel_for + ' ' + overhead] = v[parallel_for][total_time] - v[parallel_for][computation_time]

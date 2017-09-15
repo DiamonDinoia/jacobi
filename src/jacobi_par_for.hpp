@@ -57,7 +57,7 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }, workers);
 
-//        pf.parallel_reduce_static(error, 0.f, 0, solutions.size(), 1, 0, reduce2, reduce, workers);
+//        pf.parallel_reduce_static(error, 0.f, 0, solutions.size(), 1, 0,reduce2, reduce, workers);
 //
 //        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
 //            old_solutions[i] = solutions[i];
@@ -70,7 +70,7 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
             //relaxed memory order beacuse only atomicity is needed
             while (!flag.test_and_set(std::memory_order_relaxed)) {}
             error += val;
-            flag.clear();
+            flag.clear(std::memory_order_relaxed);
         }, workers);
 
         //check the error and terminate in case
