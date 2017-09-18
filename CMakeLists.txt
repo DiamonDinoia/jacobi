@@ -3,6 +3,9 @@ project(jacobi)
 
 unset(DEBUG)
 
+set(WITHOMP)
+set(NOLOCKFREE)
+
 set(CMAKE_CXX_COMPILER "g++")
 
 set(CMAKE_CXX_STANDARD 14)

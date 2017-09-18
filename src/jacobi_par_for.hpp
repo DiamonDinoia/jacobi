@@ -57,11 +57,17 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }, workers);
 
-//        pf.parallel_reduce_static(error, 0.f, 0, solutions.size(), 1, 0,reduce2, reduce, workers);
-//
-//        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
-//            old_solutions[i] = solutions[i];
-//        }, workers);
+#ifdef NOLOCKFREE
+
+        pf.parallel_reduce_static(error, 0.f, 0, solutions.size(), 1, 0,reduce2, reduce, workers);
+
+        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
+            old_solutions[i] = solutions[i];
+        }, workers);
+
+#endif
+
+#ifndef NOLOCKFREE
 
         pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
             auto val = abs(solutions[i] - old_solutions[i]);
@@ -72,6 +78,8 @@ std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, co
             error += val;
             flag.clear(std::memory_order_relaxed);
         }, workers);
+
+#endif
 
         //check the error and terminate in case
         if (error / solutions.size() <= tolerance) {

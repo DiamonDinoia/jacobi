@@ -5,7 +5,12 @@
 #include "jacobi_map.hpp"
 #include "jacobi_par_for.hpp"
 #include "jacobi_thread.hpp"
+
+#ifdef WITHOMP
+
 #include "jacobi_omp.hpp"
+
+#endif
 
 using namespace std;
 
@@ -96,8 +101,8 @@ ulong max_iterations = 1000;
 float tolerance = 0.f;
 
 int main(const int argc, const char *argv[]) {
-    std::ofstream out("results.txt");
-    std::cout.rdbuf(out.rdbuf());
+//    std::ofstream out("results.txt");
+//    std::cout.rdbuf(out.rdbuf());
     if (argc < 3) {
         cout << "Please insert at least one file name, the number of workers and the number of max_iterations" << endl;
         exit(1);
@@ -125,6 +130,16 @@ int main(const int argc, const char *argv[]) {
 
 
         start = Time::now();
+        auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
+        end = Time::now();
+
+        dsec thread_solution_time = end - start;
+        cout << "thread jacobi | total time: " << thread_solution_time.count() << endl;
+        print_solution(thread_solution, "thread jacobi | solution: ");
+
+#ifdef WITHOMP
+
+        start = Time::now();
         auto omp_solution = jacobi_omp(matrix, terms, max_iterations, tolerance, workers);
         end = Time::now();
 
@@ -132,6 +147,7 @@ int main(const int argc, const char *argv[]) {
         cout << "openmp jacobi | total time: " << omp_solution_time.count() << endl;
         print_solution(omp_solution, "openmp jacobi | solution: ");
 
+#endif
 
         start = Time::now();
         auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
@@ -141,13 +157,6 @@ int main(const int argc, const char *argv[]) {
         cout << "parallel for | total time: " << parallel_for_solution_time.count() << endl;
         print_solution(par_for_solution, "parallel for | solution: ");
 
-        start = Time::now();
-        auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
-        end = Time::now();
-
-        dsec thread_solution_time = end - start;
-        cout << "thread jacobi | total time: " << thread_solution_time.count() << endl;
-        print_solution(thread_solution, "thread jacobi | solution: ");
 
         start = Time::now();
         auto map_solution = jacobi_map(test, &terms[0], size, max_iterations, tolerance, workers);

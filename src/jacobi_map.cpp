@@ -60,13 +60,22 @@ namespace {
                 input->solutions[i] = tmp / (coefficients[i][i]);
             }, nworkers);
 
-//
-//            this->parallel_reduce_static(input->error, 0.f, 0, size, 1, 0, reduce2, reduce, nworkers);
-//
-//            this->parallel_for_static(0, size, 1, 0, [&input](const ulong i) {
-//                input->old_solutions[i] = input->solutions[i];
-//            }, nworkers);
+
             // calculate the error
+
+#ifdef NOLOCKFREE
+
+
+            this->parallel_reduce_static(input->error, 0.f, 0, size, 1, 0, reduce2, reduce, nworkers);
+
+            this->parallel_for_static(0, size, 1, 0, [&input](const ulong i) {
+                input->old_solutions[i] = input->solutions[i];
+            }, nworkers);
+
+#endif
+
+#ifndef NOLOCKFREE
+
             this->parallel_for_static(0, size, 1, 0, [&input](const ulong i, float error = 0.f) {
                 error += abs(input->solutions[i] - input->old_solutions[i]);
                 input->old_solutions[i] = input->solutions[i];
@@ -74,6 +83,8 @@ namespace {
                 input->error += error;
                 flag.clear(std::memory_order_relaxed);
             }, nworkers);
+#endif
+
             ff_send_out(input);
             return GO_ON;
 

@@ -92,7 +92,7 @@ namespace {
             //save the error, spin-lock on the global variable
             while (!flag.test_and_set(std::memory_order_relaxed)) {}
             errors += myerror;
-            flag.clear();
+            flag.clear(std::memory_order_relaxed);
             barrier->wait();
             // similar to #pragma omp once, execute it only one time
             if (!flag.test_and_set()) {
@@ -128,7 +128,6 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
     std::vector<float> old_solutions __attribute__((aligned(64)));
     std::vector<float> solutions __attribute__((aligned(64)));
     // initialize the solution vector
-#pragma ivdep
     for (int i = 0; i < coefficients.size(); ++i) {
         old_solutions.emplace_back(tolerance - tolerance);
         solutions.emplace_back(tolerance - tolerance);
