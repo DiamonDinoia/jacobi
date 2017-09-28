@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 3.8)
 project(jacobi)
 
-unset(DEBUG)
-
-set(WITHOMP)
-set(NOLOCKFREE)
-
 set(CMAKE_CXX_COMPILER "g++")
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "-Ofast -fopenmp -static")
+set(CMAKE_CXX_FLAGS "-O3 -fopenmp -static")
+
+add_compile_options(-DWITHOMP)
+add_compile_options(-DNOLOCKFREE)
 
 include_directories("~/fastflow")
 

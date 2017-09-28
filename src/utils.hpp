@@ -7,11 +7,15 @@
 
 #include <vector>
 #include <chrono>
+#include <string>
 
 typedef unsigned long ulong;
 
 typedef std::chrono::high_resolution_clock Time;
 typedef std::chrono::duration<double> dsec;
+
+const std::string separator = "|";
+
 
 
 template<typename T>

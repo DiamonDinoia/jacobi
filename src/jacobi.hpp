@@ -9,6 +9,10 @@
 #include "utils.hpp"
 #include <iostream>
 
+
+static const std::string name = "serial_jacobi";
+
+
 /**
  * Serial implementation of the Jacobi method simply iterates until reach the convergence or reach the max number of
  * iterations
@@ -25,13 +29,15 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
     std::vector<T> old_solutions __attribute__((aligned(64)));
     std::vector<T> solutions __attribute__((aligned(64)));
 
-
+    //Initialize solution vector
 #pragma ivdep
     for (int i = 0; i < coefficients.size(); ++i) {
         old_solutions.emplace_back(tolerance - tolerance);
         solutions.emplace_back(tolerance - tolerance);
     }
     T error;
+
+    //Starting iterations
     auto start = Time::now();
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
         //calculate solutions
