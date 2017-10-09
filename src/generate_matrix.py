@@ -5,7 +5,7 @@ def generate_matrix(size, name):
     matrix = np.random.rand(size, size)
     terms = np.array([x[0] for x in np.random.rand(size, 1)])
     for i in range(size):
-        value = sum(map(abs, matrix[i])) - matrix[i][i]
+        value = sum(map(abs, matrix[i])) - abs(matrix[i][i])
         while value > abs(matrix[i][i]):
             matrix[i][i] += 1.0
     solution = np.linalg.solve(matrix, terms)

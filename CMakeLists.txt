@@ -5,14 +5,14 @@ set(CMAKE_CXX_COMPILER "g++")
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "-O3 -fopenmp -static")
+set(CMAKE_CXX_FLAGS "-O3 -fopenmp")
 
 add_compile_options(-DWITHOMP)
 add_compile_options(-DNOLOCKFREE)
 
 include_directories("~/fastflow")
 
-set(SOURCE_FILES src/main.cpp src/jacobi.hpp src/barrier.hpp src/jacobi_map.cpp src/jacobi_map.hpp src/jacobi_par_for.hpp
+set(SOURCE_FILES src/main.cpp src/jacobi.hpp src/barrier.hpp src/jacobi_par_for.hpp
         src/jacobi_thread.hpp src/jacobi_thread.cpp src/utils.hpp src/jacobi_omp.hpp)
 
 add_executable(jacobi ${SOURCE_FILES})

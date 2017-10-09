@@ -2,13 +2,9 @@
 #include <iostream>
 
 #include "jacobi.hpp"
-#include "jacobi_map.hpp"
 #include "jacobi_par_for.hpp"
-#include "jacobi_thread.hpp"
 
 #ifdef WITHOMP
-
-#include "jacobi_omp.hpp"
 
 #endif
 
@@ -111,64 +107,71 @@ int main(const int argc, const char *argv[]) {
     max_iterations = (ulong) strtol(argv[2], nullptr, 10);
     tolerance = strtof(argv[3], nullptr);
 
-    for (int arg = 4; arg < argc; ++arg) {
-        cout << "RUN: -----------------> " << argv[arg] << endl;
-        parse_input(argv[arg]);
-        auto test = new float *[size];
-        for (ulong i = 0; i < size; ++i) {
-            test[i] = &matrix[i][0];
-        }
-        cout << "workers " << workers << endl;
+    vector<vector<float>> matrix;
+    vector<float> terms;
+    generate_diagonal_dominant_matrix(16384, matrix, -10000.f, 10000.f);
+    generate_vector(16384, terms, -10000.f, 10000.f);
 
-        auto start = Time::now();
-        auto serial_solution = serial_jacobi(matrix, terms, max_iterations, tolerance);
-        auto end = Time::now();
-
-        dsec serial_solution_time = end - start;
-        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
-        print_solution(serial_solution, "serial jacobi | solution: ");
+    auto solution = jacobi::serial_jacobi(matrix, terms, 10, -1.f);
 
 
-        start = Time::now();
-        auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
-        end = Time::now();
+//    for (int i = 0; i < 4; ++i) {
+//        for (int j = 0; j < 4; ++j) {
+//            cout<<matrix[i][j] << ' ';
+//        }
+//        cout << endl;
+//    }
 
-        dsec thread_solution_time = end - start;
-        cout << "thread jacobi | total time: " << thread_solution_time.count() << endl;
-        print_solution(thread_solution, "thread jacobi | solution: ");
-
-#ifdef WITHOMP
-
-        start = Time::now();
-        auto omp_solution = jacobi_omp(matrix, terms, max_iterations, tolerance, workers);
-        end = Time::now();
-
-        dsec omp_solution_time = end - start;
-        cout << "openmp jacobi | total time: " << omp_solution_time.count() << endl;
-        print_solution(omp_solution, "openmp jacobi | solution: ");
-
-#endif
-
-        start = Time::now();
-        auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
-        end = Time::now();
-
-        dsec parallel_for_solution_time = end - start;
-        cout << "parallel for | total time: " << parallel_for_solution_time.count() << endl;
-        print_solution(par_for_solution, "parallel for | solution: ");
-
-
-        start = Time::now();
-        auto map_solution = jacobi_map(test, &terms[0], size, max_iterations, tolerance, workers);
-        end = Time::now();
-
-        dsec map_solution_time = end - start;
-        cout << "map jacobi | total time: " << map_solution_time.count() << endl;
-        print_solution(vector<float>(map_solution, map_solution + size), "map jacobi | solution: ");
-
-        matrix.clear();
-        terms.clear();
-        solution.clear();
-    }
+//    for (int arg = 4; arg < argc; ++arg) {
+//        cout << "RUN: -----------------> " << argv[arg] << endl;
+//        parse_input(argv[arg]);
+//        auto test = new float *[size];
+//        for (ulong i = 0; i < size; ++i) {
+//            test[i] = &matrix[i][0];
+//        }
+//        cout << "workers " << workers << endl;
+//
+//        auto start = Time::now();
+//        auto serial_solution = jacobi::serial_jacobi(matrix, terms, max_iterations, tolerance);
+//        auto end = Time::now();
+//
+//        dsec serial_solution_time = end - start;
+//        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
+//        print_solution(serial_solution, "serial jacobi | solution: ");
+//
+//
+//        start = Time::now();
+//        auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
+//        end = Time::now();
+//
+//        dsec thread_solution_time = end - start;
+//        cout << "thread jacobi | total time: " << thread_solution_time.count() << endl;
+//        print_solution(thread_solution, "thread jacobi | solution: ");
+//
+//        #ifdef WITHOMP
+//
+//        start = Time::now();
+//        auto omp_solution = jacobi_omp(matrix, terms, max_iterations, tolerance, workers);
+//        end = Time::now();
+//
+//        dsec omp_solution_time = end - start;
+//        cout << "openmp jacobi | total time: " << omp_solution_time.count() << endl;
+//        print_solution(omp_solution, "openmp jacobi | solution: ");
+//
+//        #endif
+//
+//        start = Time::now();
+//        auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
+//        end = Time::now();
+//
+//        dsec parallel_for_solution_time = end - start;
+//        cout << "parallel for | total time: " << parallel_for_solution_time.count() << endl;
+//        print_solution(par_for_solution, "parallel for | solution: ");
+//
+//
+//        matrix.clear();
+//        terms.clear();
+//        solution.clear();
+//    }
     return 0;
 }

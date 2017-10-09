@@ -25,6 +25,8 @@ template<typename T>
 std::vector<T> jacobi_par_for(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
                               const ulong iterations, const T tolerance, const ulong workers) {
 
+    using namespace util;
+
     std::vector<float> old_solutions __attribute__((aligned(64)));
     std::vector<float> solutions __attribute__((aligned(64)));
     //vectorize the loop

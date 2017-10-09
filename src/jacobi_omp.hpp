@@ -10,6 +10,7 @@
 #include "utils.hpp"
 #include <iostream>
 
+
 /**
  * Serial implementation of the Jacobi method simply iterates until reach the convergence or reach the max number of
  * iterations
@@ -35,17 +36,18 @@ std::vector<T> jacobi_omp(const std::vector<std::vector<T>> coefficients, const 
     T error;
     auto start = Time::now();
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
+        std::swap(solutions, old_solutions);
+
         //calculate solutions
         error = tolerance - tolerance;
+
 #pragma omp parallel for
         for (ulong i = 0; i < solutions.size(); ++i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }
         //compute the error
-#pragma omp parallel for reduction(+:error)
         for (ulong i = 0; i < solutions.size(); ++i) {
             error += abs(solutions[i] - old_solutions[i]);
-            old_solutions[i] = solutions[i];
         }
         // check the error
         error /= solutions.size();

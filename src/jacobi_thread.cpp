@@ -11,6 +11,7 @@
 #include "barrier.hpp"
 
 using namespace std;
+using namespace util;
 
 namespace {
 
