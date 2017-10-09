@@ -11,13 +11,16 @@
 #include "barrier.hpp"
 
 using namespace std;
-using namespace util;
+
+auto static start_time = Time::now();
+auto static init_time = Time::now();
+auto static total_time = Time::now();
 
 namespace {
 
     vector<std::vector<float>> coefficients;
     vector<float> terms;
-    ulong max_iterations;
+    ulong iterations;
     float tolerance;
 
     typedef struct job {
@@ -62,7 +65,7 @@ namespace {
     spinning_barrier *barrier = nullptr;
 
 
-    float errors = 0.f;
+    float error = 0.f;
 
     ulong iteration_computed;
 
@@ -73,10 +76,10 @@ namespace {
         flag.clear();
         ulong iteration;
         float myerror;
-        for (iteration = 0; iteration < max_iterations; ++iteration) {
+        for (iteration = 0; iteration < iterations; ++iteration) {
             //calculate solutions
             myerror = 0.f;
-            errors = 0.f;
+            error = 0.f;
             barrier->wait();
 #pragma ivdep
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
@@ -84,7 +87,7 @@ namespace {
             }
             // wait the others
             barrier->wait();
-            //calculate the errors and update the solution vectors
+            //calculate the error and update the solution vectors
 #pragma simd
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
                 myerror += abs(solutions[i] - old_solutions[i]);
@@ -92,13 +95,13 @@ namespace {
             }
             //save the error, spin-lock on the global variable
             while (!flag.test_and_set(std::memory_order_relaxed)) {}
-            errors += myerror;
+            error += myerror;
             flag.clear(std::memory_order_relaxed);
             barrier->wait();
             // similar to #pragma omp once, execute it only one time
             if (!flag.test_and_set()) {
-                errors /= (float) solutions.size();
-                termination = errors <= tolerance;
+                error /= (float) solutions.size();
+                termination = error <= tolerance;
                 flag.clear();
             }
             // wait the others and check if terminate
@@ -112,13 +115,14 @@ namespace {
 
 }
 
-vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,
+vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,
                             const ulong _iterations, const float _tolerance, const ulong _nWorkers) {
 
+    start_time = Time::now();
     // setting up shared data strucutures
     coefficients = _coefficients;
     terms = _terms;
-    max_iterations = _iterations;
+    iterations = _iterations;
     iteration_computed = _iterations;
     tolerance = _tolerance;
     nWorkers = _nWorkers;
@@ -138,12 +142,13 @@ vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients
     for (ulong i = 0; i < nWorkers; ++i)
         threads.emplace_back(thread(task, i, ref(solutions), ref(old_solutions)));
 
-    auto start = Time::now();
+    init_time = Time::now();
     // wait for the termination
     for (int i = 0; i < nWorkers; ++i) threads[i].join();
-    auto end = Time::now();
-    std::cout << "thread jacobi | iterations computed: " << iteration_computed << " error: " << errors << std::endl;
-    std::cout << "thread jacobi | computation time: " << dsec(end - start).count() << std::endl;
+    total_time = Time::now();
+    std::cout << iterations_computed << iterations << ' ' << error_s << error << std::endl;
+    std::cout << initi_time_s << dsec(init_time - start_time).count() << std::endl;
+    std::cout << computation_time_s << dsec(total_time - init_time).count() << std::endl;
     flag.clear();
     threads.clear();
     delete (barrier);

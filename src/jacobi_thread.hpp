@@ -19,7 +19,7 @@
  * @param workers number of threads
  * @return solution vector
  */
-std::vector<float> jacobi_thread(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,
+std::vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,
                                  const ulong _iterations, const float _tolerance, const ulong nWorkers);
 
 

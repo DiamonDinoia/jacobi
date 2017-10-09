@@ -12,7 +12,7 @@ OMPFLAGS=-fopenmp -DWITHOMP
 main: main.cpp jacobi_thread.o jacobi_map.o
 	$(CXX) $(CXXFLAGS) $? -o $@
 
-jacobi_thread.o: jacobi_thread.cpp
+jacobi_thread.o: thread_jacobi.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 jacobi_map.o: jacobi_map.cpp

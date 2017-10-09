@@ -2,7 +2,9 @@
 #include <iostream>
 
 #include "jacobi.hpp"
-#include "jacobi_par_for.hpp"
+#include "jacobi_fastflow.hpp"
+#include "jacobi_thread.hpp"
+#include "jacobi_omp.hpp"
 
 #ifdef WITHOMP
 
@@ -15,11 +17,32 @@ const auto matrix_string = "matrix:";
 const auto solution_string = "solution:";
 const auto terms_string = "terms:";
 
-ulong size;
+const auto sequential_string = "sequential";
+const auto omp_string = "omp";
+const auto thread_string = "thread";
+const auto fastflow_string = "fastflow";
+
+static const float range = 10000.f;
+
+enum METHODS {
+    SEQUENTIAL,
+    OPENMP,
+    THREADS,
+    FASTFLOW
+};
+
+auto method = SEQUENTIAL;
+
+
+
 vector<vector<float>> matrix __attribute__((aligned(64)));
 vector<float> terms __attribute__((aligned(64)));
 vector<float> solution __attribute__((aligned(64)));
 
+ulong size = 1024;
+ulong workers = 8;
+ulong iterations = 50;
+float tolerance = -1.f;
 
 void parse_input(const string &filename) {
     ifstream file(filename);
@@ -84,94 +107,103 @@ void print() {
     cout << endl;
 }
 
-void print_solution(const vector<float> &solution, const string &name) {
-    cout << name << ' ';
+void print_solution(const vector<float> &solution) {
     for (auto &sol: solution) {
         cout << sol << " ";
     }
     cout << endl;
 }
 
-ulong workers = 8;
-ulong max_iterations = 1000;
-float tolerance = 0.f;
 
-int main(const int argc, const char *argv[]) {
+void print_helper() {
+    cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>] "
+         << "[-i <iterations>] " << "[-t <tolerance>]" << endl << endl;
+    cout << "The required arguments are:" << endl;
+    cout << '\t' << "algorithm" << '\t' << "indicate the algorithm executed, possible values:" << endl;
+    cout << "\t\t" << sequential_string << ": sequential jacobi algorithm" << endl;
+    cout << "\t\t" << omp_string << ": OpenMP multi-thread implementation of jacobi algorithm" << endl;
+    cout << "\t\t" << thread_string << ": plain thread implementation of jacobi algorithm" << endl;
+    cout << "\t\t" << fastflow_string << ": fastflow implementation of jacobi algorithm" << endl;
+    cout << "The optional arguments are:" << endl;
+    cout << '\t' << "[-w]" << '\t' << "number of threads used, default 8" << endl;
+    cout << '\t' << "[-s]" << '\t' << "size of the matrix, default 1024" << endl;
+    cout << '\t' << "[-i]" << '\t' << "iteration performed, default 50" << endl;
+    cout << '\t' << "[-t]" << '\t' << "error tolerated, default -1" << endl;
+    flush(cout);
+    exit(EINVAL);
+}
+
+void parse_args(const int argc, char *const argv[]) {
+    if (argc < 2) {
+        print_helper();
+    }
+
+    string arg = std::string(argv[1]);
+
+    if (arg == sequential_string) method = SEQUENTIAL;
+    else if (arg == omp_string) method = OPENMP;
+    else if (arg == thread_string) method = THREADS;
+    else if (arg == fastflow_string) method = FASTFLOW;
+    else print_helper();
+
+    errno = 0;
+    int c;
+    while ((c = getopt(argc, argv, "w:s:i:t:")) != -1) {
+        switch (c) {
+            case 'w':
+                workers = static_cast<ulong> (strtol(optarg, nullptr, 10));
+                break;
+            case 's':
+                size = static_cast<ulong> (strtol(optarg, nullptr, 10));
+                break;
+            case 'i':
+                iterations = static_cast<ulong> (strtol(optarg, nullptr, 10));
+                break;
+            case 't':
+                tolerance = stof(optarg);
+                break;
+            default:
+                print_helper();
+        }
+    }
+    if (errno) {
+        print_helper();
+    }
+}
+
+int main(const int argc, char *const argv[]) {
 //    std::ofstream out("results.txt");
 //    std::cout.rdbuf(out.rdbuf());
-    if (argc < 3) {
-        cout << "Please insert at least one file name, the number of workers and the number of max_iterations" << endl;
-        exit(1);
-    }
-    workers = (ulong) strtol(argv[1], nullptr, 10);
-    max_iterations = (ulong) strtol(argv[2], nullptr, 10);
-    tolerance = strtof(argv[3], nullptr);
+
+    parse_args(argc, argv);
 
     vector<vector<float>> matrix;
     vector<float> terms;
-    generate_diagonal_dominant_matrix(16384, matrix, -10000.f, 10000.f);
-    generate_vector(16384, terms, -10000.f, 10000.f);
+    vector<float> solution;
 
-    auto solution = jacobi::serial_jacobi(matrix, terms, 10, -1.f);
+    generate_diagonal_dominant_matrix(size, matrix, -range, range);
+    generate_vector(size, terms, -range, range);
+
+    cout << "algorithm: ";
+    switch (method) {
+        case SEQUENTIAL:
+            cout << sequential_string << endl;
+            solution = serial_jacobi(matrix, terms, iterations, tolerance);
+            break;
+        case THREADS:
+            cout << thread_string << endl;
+            solution = thread_jacobi(matrix, terms, iterations, tolerance, workers);
+            break;
+        case OPENMP:
+            cout << omp_string << endl;
+            solution = omp_jacobi(matrix, terms, iterations, tolerance, workers);
+            break;
+        case FASTFLOW:
+            cout << fastflow_string << endl;
+            solution = fastflow_jacobi(matrix, terms, iterations, tolerance, workers);
+            break;
+    }
 
 
-//    for (int i = 0; i < 4; ++i) {
-//        for (int j = 0; j < 4; ++j) {
-//            cout<<matrix[i][j] << ' ';
-//        }
-//        cout << endl;
-//    }
-
-//    for (int arg = 4; arg < argc; ++arg) {
-//        cout << "RUN: -----------------> " << argv[arg] << endl;
-//        parse_input(argv[arg]);
-//        auto test = new float *[size];
-//        for (ulong i = 0; i < size; ++i) {
-//            test[i] = &matrix[i][0];
-//        }
-//        cout << "workers " << workers << endl;
-//
-//        auto start = Time::now();
-//        auto serial_solution = jacobi::serial_jacobi(matrix, terms, max_iterations, tolerance);
-//        auto end = Time::now();
-//
-//        dsec serial_solution_time = end - start;
-//        cout << "serial jacobi | total time: " << serial_solution_time.count() << endl;
-//        print_solution(serial_solution, "serial jacobi | solution: ");
-//
-//
-//        start = Time::now();
-//        auto thread_solution = jacobi_thread(matrix, terms, max_iterations, tolerance, workers);
-//        end = Time::now();
-//
-//        dsec thread_solution_time = end - start;
-//        cout << "thread jacobi | total time: " << thread_solution_time.count() << endl;
-//        print_solution(thread_solution, "thread jacobi | solution: ");
-//
-//        #ifdef WITHOMP
-//
-//        start = Time::now();
-//        auto omp_solution = jacobi_omp(matrix, terms, max_iterations, tolerance, workers);
-//        end = Time::now();
-//
-//        dsec omp_solution_time = end - start;
-//        cout << "openmp jacobi | total time: " << omp_solution_time.count() << endl;
-//        print_solution(omp_solution, "openmp jacobi | solution: ");
-//
-//        #endif
-//
-//        start = Time::now();
-//        auto par_for_solution = jacobi_par_for(matrix, terms, max_iterations, tolerance, workers);
-//        end = Time::now();
-//
-//        dsec parallel_for_solution_time = end - start;
-//        cout << "parallel for | total time: " << parallel_for_solution_time.count() << endl;
-//        print_solution(par_for_solution, "parallel for | solution: ");
-//
-//
-//        matrix.clear();
-//        terms.clear();
-//        solution.clear();
-//    }
     return 0;
 }

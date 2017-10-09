@@ -22,7 +22,7 @@
  * @return solution vector
  */
 template<typename T>
-std::vector<T> jacobi_omp(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
+std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
                           const ulong iterations, const T tolerance, const ulong workers) {
     std::vector<T> old_solutions __attribute__((aligned(64)));
     std::vector<T> solutions __attribute__((aligned(64)));
