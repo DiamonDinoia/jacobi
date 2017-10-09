@@ -9,11 +9,8 @@
 #include "utils.hpp"
 #include <iostream>
 
-auto static start_time = Time::now();
-auto static init_time = Time::now();
-auto static total_time = Time::now();
 
-static const std::string name = "serial jacobi";
+
 
 /**
  * Serial implementation of the Jacobi method simply iterates until reach the convergence or reach the max number of
@@ -44,27 +41,25 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
     }
     //Starting iterations
     init_time = Time::now();
-    for (ulong iteration = 0; iteration < iterations; ++iteration) {
-        std::swap(solutions, old_solutions);
-        //calculate solutions
+    ulong iteration;
+    for (iteration = 0; iteration < iterations; ++iteration) {
         error = zero;
+        //calculate solutions
         for (ulong i = 0; i < solutions.size(); ++i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }
         //compute the error
 #pragma simd
-        for (ulong i = 0; i < solutions.size(); ++i) {
-            error += abs(solutions[i] - old_solutions[i]);
-        }
+        for (ulong i = 0; i < solutions.size(); ++i)
+            error += std::abs(solutions[i] - old_solutions[i]);
 
         // check the error
         error /= solutions.size();
         if (error <= tolerance) break;
+        swap(solutions, old_solutions);
     }
     total_time = Time::now();
-    std::cout << iterations_computed << iterations << ' ' << error_s << error << std::endl;
-    std::cout << initi_time_s << dsec(init_time - start_time).count() << std::endl;
-    std::cout << computation_time_s << dsec(total_time - init_time).count() << std::endl;
+    print_metrics(iteration, error);
     return solutions;
 }
 

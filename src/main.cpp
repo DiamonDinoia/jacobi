@@ -107,13 +107,6 @@ void print() {
     cout << endl;
 }
 
-void print_solution(const vector<float> &solution) {
-    for (auto &sol: solution) {
-        cout << sol << " ";
-    }
-    cout << endl;
-}
-
 
 void print_helper() {
     cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>] "
@@ -157,7 +150,7 @@ void parse_args(const int argc, char *const argv[]) {
                 size = static_cast<ulong> (strtol(optarg, nullptr, 10));
                 break;
             case 'i':
-                iterations = static_cast<ulong> (strtol(optarg, nullptr, 10));
+                iterations = static_cast<ulong> (strtol(optarg, nullptr, 10)) - 1;
                 break;
             case 't':
                 tolerance = stof(optarg);
@@ -176,6 +169,8 @@ int main(const int argc, char *const argv[]) {
 //    std::cout.rdbuf(out.rdbuf());
 
     parse_args(argc, argv);
+
+    srand(42);
 
     vector<vector<float>> matrix;
     vector<float> terms;

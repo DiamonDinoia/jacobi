@@ -10,6 +10,7 @@
 #include "utils.hpp"
 #include <iostream>
 
+
 /**
  * Parallel implementation using the fastflow parallel for skeleton
  * @tparam T template, type of the values
@@ -29,71 +30,29 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
     std::vector<float> old_solutions __attribute__((aligned(64)));
     std::vector<float> solutions __attribute__((aligned(64)));
     //vectorize the loop
-#pragma ivdep
     for (int i = 0; i < coefficients.size(); ++i) {
         old_solutions.emplace_back(tolerance - tolerance);
         solutions.emplace_back(tolerance - tolerance);
     }
     auto error = tolerance - tolerance;
-    ff::ParallelForReduce<T> pf;
-
-    // code used by the reduce not needed now
-    auto reduce = [&solutions, &old_solutions](float &var, const ulong i) {
-        var += abs(solutions[i] - old_solutions[i]);
-
-    };
-    auto reduce2 = [&solutions, &old_solutions](const ulong i, float &var) {
-        var += abs(solutions[i] - old_solutions[i]);
-    };
-    // synchronization flag, used in order to use lock-free mechanisms
-    std::atomic_flag flag;
-    flag.clear();
-
-    auto start = Time::now();
+    ff::ParallelFor pf(workers);
+    auto zero = tolerance - tolerance;
 
     for (ulong iteration = 0; iteration < iterations; ++iteration) {
-        error = tolerance - tolerance;
+        error = zero;
         //calculate solutions using a parallel for
         pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
-        }, workers);
+        });
 
-#ifdef NOLOCKFREE
-
-        pf.parallel_reduce_static(error, 0.f, 0, solutions.size(), 1, 0,reduce2, reduce, workers);
-
-        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
-            old_solutions[i] = solutions[i];
-        }, workers);
-
-#endif
-
-#ifndef NOLOCKFREE
-
-        pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
-            auto val = abs(solutions[i] - old_solutions[i]);
-            old_solutions[i] = solutions[i];
-            //busy waiting for the lock (spin-lock)
-            //relaxed memory order beacuse only atomicity is needed
-            while (!flag.test_and_set(std::memory_order_relaxed)) {}
-            error += val;
-            flag.clear(std::memory_order_relaxed);
-        }, workers);
-
-#endif
+#pragma simd
+        for (ulong i = 0; i < solutions.size(); ++i)
+            error += std::abs(solutions[i] - old_solutions[i]);
 
         //check the error and terminate in case
-        if (error / solutions.size() <= tolerance) {
-            auto end = Time::now();
-            std::cout << "parallel for | iterations computed: " << iteration << " error: " << error << std::endl;
-            std::cout << "parallel for | computation time: " << dsec(end - start).count() << std::endl;
-            return solutions;
-        }
-
+        if (error / solutions.size() <= tolerance) break;
+        std::swap(solutions, old_solutions);
     }
-    auto end = Time::now();
-    std::cout << "parallel for | iterations computed: " << iterations << " error: " << error << std::endl;
-    std::cout << "parallel for | computation time: " << dsec(end - start).count() << std::endl;
     return solutions;
 }
 

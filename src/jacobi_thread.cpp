@@ -12,11 +12,8 @@
 
 using namespace std;
 
-auto static start_time = Time::now();
-auto static init_time = Time::now();
-auto static total_time = Time::now();
-
 namespace {
+
 
     vector<std::vector<float>> coefficients;
     vector<float> terms;
@@ -67,16 +64,16 @@ namespace {
 
     float error = 0.f;
 
-    ulong iteration_computed;
+    ulong iteration;
 
     /**
      * function execute by each thread.
      */
     inline void task(const ulong id, vector<float> &solutions, vector<float> &old_solutions) {
         flag.clear();
-        ulong iteration;
+        ulong _iteration;
         float myerror;
-        for (iteration = 0; iteration < iterations; ++iteration) {
+        for (_iteration = 0; _iteration < iterations; ++_iteration) {
             //calculate solutions
             myerror = 0.f;
             error = 0.f;
@@ -88,20 +85,28 @@ namespace {
             // wait the others
             barrier->wait();
             //calculate the error and update the solution vectors
+#ifdef PARALLEL_REDUCE
 #pragma simd
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
                 myerror += abs(solutions[i] - old_solutions[i]);
-                old_solutions[i] = solutions[i];
             }
             //save the error, spin-lock on the global variable
             while (!flag.test_and_set(std::memory_order_relaxed)) {}
             error += myerror;
             flag.clear(std::memory_order_relaxed);
             barrier->wait();
+#endif
             // similar to #pragma omp once, execute it only one time
             if (!flag.test_and_set()) {
+#ifndef PARALLEL_REDUCE
+                for (ulong i = 0; i < solutions.size(); ++i) {
+                    error += abs(solutions[i] - old_solutions[i]);
+                }
+#endif
                 error /= (float) solutions.size();
                 termination = error <= tolerance;
+                std::swap(solutions, old_solutions);
+                iteration = _iteration + 1;
                 flag.clear();
             }
             // wait the others and check if terminate
@@ -109,7 +114,7 @@ namespace {
             if (termination)break;
         }
         // similar to #pragma omp once, execute it only one time
-        if (!flag.test_and_set()) iteration_computed = iteration;
+        if (!flag.test_and_set()) _iteration = _iteration;
     }
 
 
@@ -123,7 +128,7 @@ vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients
     coefficients = _coefficients;
     terms = _terms;
     iterations = _iterations;
-    iteration_computed = _iterations;
+    iteration = _iterations;
     tolerance = _tolerance;
     nWorkers = _nWorkers;
     termination = false;
@@ -146,9 +151,7 @@ vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients
     // wait for the termination
     for (int i = 0; i < nWorkers; ++i) threads[i].join();
     total_time = Time::now();
-    std::cout << iterations_computed << iterations << ' ' << error_s << error << std::endl;
-    std::cout << initi_time_s << dsec(init_time - start_time).count() << std::endl;
-    std::cout << computation_time_s << dsec(total_time - init_time).count() << std::endl;
+    print_metrics(iteration, error);
     flag.clear();
     threads.clear();
     delete (barrier);

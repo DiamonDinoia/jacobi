@@ -17,7 +17,10 @@ typedef std::chrono::high_resolution_clock Time;
 typedef std::chrono::duration<double> dsec;
 
 
-const auto separator = " | ";
+auto static start_time = Time::now();
+auto static init_time = Time::now();
+auto static total_time = Time::now();
+
 const auto iterations_computed = "iterations_computed: ";
 const auto error_s = "error: ";
 const auto computation_time_s = "computation_time: ";
@@ -40,6 +43,14 @@ T solution_find(const std::vector<T> row, const std::vector<T> solutions, T term
         term -= (solutions[j] * row[j]);
     }
     return (term + (solutions[index] * row[index])) / row[index];
+}
+
+template<typename T>
+void print_solution(const std::vector<T> &solution) {
+    for (auto &sol: solution) {
+        std::cout << sol << " ";
+    }
+    std::cout << std::endl;
 }
 
 template<typename T>
@@ -72,7 +83,15 @@ void generate_diagonal_dominant_matrix(const ulong size, std::vector<std::vector
         matrix[i][i] = abs(matrix[i][i]) + sum;
     }
 
+}
 
+
+template<typename T>
+void print_metrics(const ulong iterations, const T error) {
+    std::cout << iterations_computed << iterations + 1 << std::endl;
+    std::cout << error_s << error << std::endl;
+    std::cout << initi_time_s << dsec(init_time - start_time).count() << std::endl;
+    std::cout << computation_time_s << dsec(total_time - init_time).count() << std::endl;
 }
 
 #endif //JACOBI_UTILS_H
