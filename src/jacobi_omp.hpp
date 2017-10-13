@@ -24,6 +24,9 @@
 template<typename T>
 std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
                           const ulong iterations, const T tolerance, const ulong workers) {
+
+    start_time = Time::now();
+
     std::vector<T> old_solutions __attribute__((aligned(64)));
     std::vector<T> solutions __attribute__((aligned(64)));
 
@@ -34,31 +37,29 @@ std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const 
         solutions.emplace_back(tolerance - tolerance);
     }
     T error;
-    auto start = Time::now();
-    for (ulong iteration = 0; iteration < iterations; ++iteration) {
-        std::swap(solutions, old_solutions);
+    init_time = Time::now();
+    ulong iteration;
+    for (iteration = 0; iteration < iterations; ++iteration) {
 
         //calculate solutions
         error = tolerance - tolerance;
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
         for (ulong i = 0; i < solutions.size(); ++i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }
         //compute the error
         for (ulong i = 0; i < solutions.size(); ++i) {
-            error += abs(solutions[i] - old_solutions[i]);
+            error += std::abs(solutions[i] - old_solutions[i]);
         }
         // check the error
         error /= solutions.size();
-        if (error <= tolerance) {
-            std::cout << "openmp jacobi | iterations computed: " << iteration << " error: " << error << std::endl;
-            return solutions;
-        }
+        if (error <= tolerance) break;
     }
-    auto end = Time::now();
-    std::cout << "openmp jacobi | iterations computed: " << iterations << " error: " << error << std::endl;
-    std::cout << "openmp jacobi | computation time: " << dsec(end - start).count() << std::endl;
+    total_time = Time::now();
+    std::swap(solutions, old_solutions);
+
+    print_metrics(iteration, error);
     return solutions;
 }
 

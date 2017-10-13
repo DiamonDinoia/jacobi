@@ -49,10 +49,6 @@ namespace {
             }
         }
 
-//        for (ulong i = 0; i < nWorkers; ++i) {
-//            cerr << "start: " << works[i].start << endl;
-//            cerr << "stop: " << works[i].stop << endl;
-//        }
     }
 
 
@@ -85,10 +81,11 @@ namespace {
             // wait the others
             barrier->wait();
             //calculate the error and update the solution vectors
+
 #ifdef PARALLEL_REDUCE
 #pragma simd
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
-                myerror += abs(solutions[i] - old_solutions[i]);
+                myerror += std::abs(solutions[i] - old_solutions[i]);
             }
             //save the error, spin-lock on the global variable
             while (!flag.test_and_set(std::memory_order_relaxed)) {}
@@ -96,13 +93,16 @@ namespace {
             flag.clear(std::memory_order_relaxed);
             barrier->wait();
 #endif
+
             // similar to #pragma omp once, execute it only one time
             if (!flag.test_and_set()) {
+
 #ifndef PARALLEL_REDUCE
                 for (ulong i = 0; i < solutions.size(); ++i) {
-                    error += abs(solutions[i] - old_solutions[i]);
+                    error += std::abs(solutions[i] - old_solutions[i]);
                 }
 #endif
+
                 error /= (float) solutions.size();
                 termination = error <= tolerance;
                 std::swap(solutions, old_solutions);
@@ -144,16 +144,25 @@ vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients
     }
     vector<thread> threads;
     // create the threads
+
+
+
     for (ulong i = 0; i < nWorkers; ++i)
         threads.emplace_back(thread(task, i, ref(solutions), ref(old_solutions)));
 
+
     init_time = Time::now();
     // wait for the termination
-    for (int i = 0; i < nWorkers; ++i) threads[i].join();
+    for (auto &th: threads) {
+        th.join();
+    }
     total_time = Time::now();
     print_metrics(iteration, error);
+
+
     flag.clear();
     threads.clear();
     delete (barrier);
+
     return solutions;
 }

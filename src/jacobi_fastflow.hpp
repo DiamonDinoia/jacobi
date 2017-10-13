@@ -26,7 +26,7 @@ template<typename T>
 std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
                                const ulong iterations, const T tolerance, const ulong workers) {
 
-
+    start_time = Time::now();
     std::vector<float> old_solutions __attribute__((aligned(64)));
     std::vector<float> solutions __attribute__((aligned(64)));
     //vectorize the loop
@@ -34,11 +34,14 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
         old_solutions.emplace_back(tolerance - tolerance);
         solutions.emplace_back(tolerance - tolerance);
     }
-    auto error = tolerance - tolerance;
-    ff::ParallelFor pf(workers);
     auto zero = tolerance - tolerance;
+    auto error = zero;
+    ff::ParallelFor pf(workers);
 
-    for (ulong iteration = 0; iteration < iterations; ++iteration) {
+    init_time = Time::now();
+
+    ulong iteration;
+    for (iteration = 0; iteration < iterations; ++iteration) {
         error = zero;
         //calculate solutions using a parallel for
         pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
@@ -53,6 +56,8 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
         if (error / solutions.size() <= tolerance) break;
         std::swap(solutions, old_solutions);
     }
+    total_time = Time::now();
+    print_metrics(iteration, error);
     return solutions;
 }
 

@@ -37,75 +37,11 @@ auto method = SEQUENTIAL;
 
 vector<vector<float>> matrix __attribute__((aligned(64)));
 vector<float> terms __attribute__((aligned(64)));
-vector<float> solution __attribute__((aligned(64)));
 
 ulong size = 1024;
 ulong workers = 8;
 ulong iterations = 50;
 float tolerance = -1.f;
-
-void parse_input(const string &filename) {
-    ifstream file(filename);
-    string str;
-    file >> str >> size;
-    if (str != size_string) {
-        cout << "Size unknown aborting...";
-        exit(1);
-    }
-    file >> str;
-    if (str != matrix_string) {
-        cout << "Matrix not present aborting...";
-        exit(1);
-    }
-    float value;
-    for (ulong i = 0; i < size; ++i) {
-        matrix.emplace_back(vector<float>());
-        for (ulong j = 0; j < size; ++j) {
-            file >> value;
-            matrix[i].emplace_back(value);
-        }
-    }
-    file >> str;
-    if (str != terms_string) {
-        cout << "Terms not present aborting...";
-        exit(1);
-    }
-    for (ulong j = 0; j < size; ++j) {
-        file >> value;
-        terms.emplace_back(value);
-    }
-    file >> str;
-    if (str != solution_string) {
-        cout << "Solution not present aborting...";
-        exit(1);
-    }
-    for (ulong j = 0; j < size; ++j) {
-        file >> value;
-        solution.emplace_back(value);
-    }
-    file.close();
-}
-
-
-void print() {
-    cout << matrix_string << ' ' << endl;
-    for (int i = 0; i < size; ++i) {
-        for (int j = 0; j < size; ++j) {
-            cout << matrix[i][j] << ' ';
-        }
-        cout << endl;
-    }
-    cout << terms_string << ' ' << endl;
-    for (int i = 0; i < size; ++i) {
-        cout << terms[i] << ' ';
-    }
-    cout << endl;
-    cout << solution_string << ' ' << endl;
-    for (int i = 0; i < size; ++i) {
-        cout << solution[i] << ' ';
-    }
-    cout << endl;
-}
 
 
 void print_helper() {
@@ -172,12 +108,12 @@ int main(const int argc, char *const argv[]) {
 
     srand(42);
 
-    vector<vector<float>> matrix;
-    vector<float> terms;
     vector<float> solution;
 
     generate_diagonal_dominant_matrix(size, matrix, -range, range);
     generate_vector(size, terms, -range, range);
+
+    cout << "matrix_size: " << size << endl;
 
     cout << "algorithm: ";
     switch (method) {

@@ -1,21 +1,17 @@
 ffdir=~/fastflow
-cores=8
-iterations=500
+cores=64
+iterations=100
 tolerance=-1.f
 
-CXX=g++
-CXXFLAGS=-Ofast -pthread -std=c++14 -I $(ffdir)
-OMPFLAGS=-fopenmp -DWITHOMP
+CXX=icc
+CXXFLAGS=-O3 -pthread -mmic -std=c++14 -openmp -openmp-link=static -I $(ffdir)
 
 .PHONY: main clean cleanall test benchmark run run_extended test_no_omp benchmark_no_omp
 
-main: main.cpp jacobi_thread.o jacobi_map.o
+main: main.cpp jacobi_thread.o
 	$(CXX) $(CXXFLAGS) $? -o $@
 
-jacobi_thread.o: thread_jacobi.cpp
-	$(CXX) $(CXXFLAGS) -c $<
-
-jacobi_map.o: jacobi_map.cpp
+jacobi_thread.o: jacobi_thread.cpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:
@@ -27,25 +23,4 @@ cleanall:
 	rm -f *txt
 	rm -f *png
 
-run:
-	python generate_matrix.py
-	./main $(cores) $(iterations) $(tolerance) matrix0.txt matrix1.txt matrix2.txt matrix3.txt > results.txt
-	python parse_results.py -i results.txt -o metrics.txt
-
-run_extended:
-	python generate_matrix.py
-	./main $(cores) $(iterations) $(tolerance) matrix0.txt matrix1.txt matrix2.txt matrix3.txt matrix4.txt matrix5.txt > results.txt
-	python parse_results.py -i results.txt -o metrics.txt
-
-test_no_omp: main run
-
-benchmark_no_omp: main run_extended
-
-test: CXXFLAGS += $(OMPFLAGS)
-test: main run
-
-benchmark: CXXFLAGS += $(OMPFLAGS)
-benchmark: main run_extended
-
-	
 	
