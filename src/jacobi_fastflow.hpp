@@ -29,13 +29,14 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
     start_time = Time::now();
     std::vector<float> old_solutions __attribute__((aligned(64)));
     std::vector<float> solutions __attribute__((aligned(64)));
-    //vectorize the loop
-    for (int i = 0; i < coefficients.size(); ++i) {
-        old_solutions.emplace_back(tolerance - tolerance);
-        solutions.emplace_back(tolerance - tolerance);
-    }
     auto zero = tolerance - tolerance;
     auto error = zero;
+
+    //vectorize the loop
+    for (int i = 0; i < coefficients.size(); ++i) {
+        old_solutions.emplace_back(zero);
+        solutions.emplace_back(zero);
+    }
     ff::ParallelFor pf(workers);
 
     init_time = Time::now();
@@ -46,7 +47,7 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
         //calculate solutions using a parallel for
         pf.parallel_for_static(0, solutions.size(), 1, 0, [&](const ulong i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
-        });
+        }, workers);
 
 #pragma simd
         for (ulong i = 0; i < solutions.size(); ++i)

@@ -12,15 +12,15 @@
 
 using namespace std;
 
-const auto size_string = "size:";
-const auto matrix_string = "matrix:";
-const auto solution_string = "solution:";
-const auto terms_string = "terms:";
 
 const auto sequential_string = "sequential";
 const auto omp_string = "omp";
 const auto thread_string = "thread";
 const auto fastflow_string = "fastflow";
+static const auto matrix_size = "matrix_size:";
+static const auto algorithm = "algorithm:";
+static const auto nworkers = "workers:";
+
 
 static const float range = 10000.f;
 
@@ -32,8 +32,6 @@ enum METHODS {
 };
 
 auto method = SEQUENTIAL;
-
-
 
 vector<vector<float>> matrix __attribute__((aligned(64)));
 vector<float> terms __attribute__((aligned(64)));
@@ -113,9 +111,10 @@ int main(const int argc, char *const argv[]) {
     generate_diagonal_dominant_matrix(size, matrix, -range, range);
     generate_vector(size, terms, -range, range);
 
-    cout << "matrix_size: " << size << endl;
+    cout << matrix_size << ' ' << size << endl;
+    cout << nworkers << ' ' << workers << endl;
 
-    cout << "algorithm: ";
+    cout << algorithm << ' ';
     switch (method) {
         case SEQUENTIAL:
             cout << sequential_string << endl;
