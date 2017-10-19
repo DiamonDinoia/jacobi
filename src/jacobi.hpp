@@ -24,7 +24,7 @@
  */
 template<typename T>
 std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
-                             const ulong iterations, const T tolerance) {
+                             const ulong iterations, const T tolerance, std::ofstream &out) {
 
     start_time = Time::now();
     //allocate solution vectors
@@ -60,6 +60,7 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
     }
     total_time = Time::now();
     print_metrics(iteration, error);
+    write_csv(iteration, error, out);
     return solutions;
 }
 

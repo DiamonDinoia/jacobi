@@ -4,51 +4,41 @@
 #include "jacobi.hpp"
 #include "jacobi_fastflow.hpp"
 #include "jacobi_thread.hpp"
-#include "jacobi_omp.hpp"
 
 #ifdef WITHOMP
+
+#include "jacobi_omp.hpp"
 
 #endif
 
 using namespace std;
 
 
-const auto sequential_string = "sequential";
-const auto omp_string = "omp";
-const auto thread_string = "thread";
-const auto fastflow_string = "fastflow";
-static const auto matrix_size = "matrix_size:";
-static const auto algorithm = "algorithm:";
-static const auto nworkers = "workers:";
-
-
-static const float range = 10000.f;
-
-enum METHODS {
-    SEQUENTIAL,
-    OPENMP,
-    THREADS,
-    FASTFLOW
-};
-
-auto method = SEQUENTIAL;
-
 vector<vector<float>> matrix __attribute__((aligned(64)));
 vector<float> terms __attribute__((aligned(64)));
+
 
 ulong size = 1024;
 ulong workers = 8;
 ulong iterations = 50;
-float tolerance = -1.f;
+float tolerance = 0;
+
+char *filename;
+
+ofstream outfile;
+auto to_csv = false;
+auto debug = false;
 
 
 void print_helper() {
-    cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>] "
+    cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>]  << [-p <filename>]"
          << "[-i <iterations>] " << "[-t <tolerance>]" << endl << endl;
     cout << "The required arguments are:" << endl;
     cout << '\t' << "algorithm" << '\t' << "indicate the algorithm executed, possible values:" << endl;
     cout << "\t\t" << sequential_string << ": sequential jacobi algorithm" << endl;
+#ifdef WITHOMP
     cout << "\t\t" << omp_string << ": OpenMP multi-thread implementation of jacobi algorithm" << endl;
+#endif
     cout << "\t\t" << thread_string << ": plain thread implementation of jacobi algorithm" << endl;
     cout << "\t\t" << fastflow_string << ": fastflow implementation of jacobi algorithm" << endl;
     cout << "The optional arguments are:" << endl;
@@ -75,7 +65,7 @@ void parse_args(const int argc, char *const argv[]) {
 
     errno = 0;
     int c;
-    while ((c = getopt(argc, argv, "w:s:i:t:")) != -1) {
+    while ((c = getopt(argc, argv, "w:s:i:t:p:d")) != -1) {
         switch (c) {
             case 'w':
                 workers = static_cast<ulong> (strtol(optarg, nullptr, 10));
@@ -89,6 +79,14 @@ void parse_args(const int argc, char *const argv[]) {
             case 't':
                 tolerance = stof(optarg);
                 break;
+            case 'p':
+                to_csv = true;
+                filename = new char[strlen(optarg)];
+                strcpy(filename, optarg);
+                break;
+            case 'd':
+                debug = true;
+                break;
             default:
                 print_helper();
         }
@@ -99,8 +97,6 @@ void parse_args(const int argc, char *const argv[]) {
 }
 
 int main(const int argc, char *const argv[]) {
-//    std::ofstream out("results.txt");
-//    std::cout.rdbuf(out.rdbuf());
 
     parse_args(argc, argv);
 
@@ -108,32 +104,60 @@ int main(const int argc, char *const argv[]) {
 
     vector<float> solution;
 
+    if (to_csv) {
+        if (!ifstream(filename)) {
+            outfile.open(filename);
+            outfile << algorithm << ',' << matrix_size << ',' << nworkers << ',' << init_time_s << ','
+                    << computation_time_s
+                    << ',' << iterations_computed << ',' << error_s << std::endl;
+        } else outfile.open(filename, ios::app);
+    }
+
     generate_diagonal_dominant_matrix(size, matrix, -range, range);
     generate_vector(size, terms, -range, range);
 
     cout << matrix_size << ' ' << size << endl;
     cout << nworkers << ' ' << workers << endl;
-
     cout << algorithm << ' ';
+
     switch (method) {
         case SEQUENTIAL:
             cout << sequential_string << endl;
-            solution = serial_jacobi(matrix, terms, iterations, tolerance);
+            if (to_csv)
+                outfile << sequential_string << ',' << size << ',' << 1 << ',';
+            solution = serial_jacobi(matrix, terms, iterations, tolerance, outfile);
             break;
         case THREADS:
             cout << thread_string << endl;
-            solution = thread_jacobi(matrix, terms, iterations, tolerance, workers);
+            if (to_csv)
+                outfile << thread_string << ',' << size << ',' << workers << ',';
+            solution = thread_jacobi(matrix, terms, iterations, tolerance, workers, outfile);
             break;
+#ifdef WITHOMP
         case OPENMP:
             cout << omp_string << endl;
-            solution = omp_jacobi(matrix, terms, iterations, tolerance, workers);
+            if (to_csv)
+                outfile << omp_string << ',' << size << ',' << workers << ',';
+            solution = omp_jacobi(matrix, terms, iterations, tolerance, workers, outfile);
             break;
+#endif
         case FASTFLOW:
             cout << fastflow_string << endl;
-            solution = fastflow_jacobi(matrix, terms, iterations, tolerance, workers);
+            if (to_csv)
+                outfile << fastflow_string << ',' << size << ',' << workers << ',';
+            solution = fastflow_jacobi(matrix, terms, iterations, tolerance, workers, outfile);
             break;
     }
 
+    if (debug) {
+        cout << "Solution: ";
+        print_solution(solution);
+        float error = check_error(matrix, terms, solution);
+        cout << "Real error: " << error << endl;
+    }
 
+    outfile.flush();
+    outfile.close();
+    delete (filename);
     return 0;
 }

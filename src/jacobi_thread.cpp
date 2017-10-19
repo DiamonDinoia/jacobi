@@ -14,7 +14,6 @@ using namespace std;
 
 namespace {
 
-
     vector<std::vector<float>> coefficients __attribute__((aligned(64)));
     vector<float> terms __attribute__((aligned(64)));
     ulong iterations;
@@ -40,7 +39,6 @@ namespace {
         for (ulong i = 0; i < nWorkers; ++i) {
             works.emplace_back(job(i * slice, (i + 1) * slice));
         }
-
         if (residual != 0) {
             for (ulong i = 0; i < nWorkers; ++i) {
                 if (i != 0) works[i].start = works[i - 1].stop;
@@ -66,11 +64,9 @@ namespace {
     inline void
     task(const ulong id, vector<float> &solutions, vector<float> &old_solutions, spinning_barrier &barrier) {
         flag.clear();
-        float myerror;
         ulong _iteration;
         for (_iteration = 0; _iteration < iterations; ++_iteration) {
             //calculate solutions
-            myerror = 0.f;
             error = 0.f;
             barrier.wait();
 #pragma ivdep
@@ -79,29 +75,13 @@ namespace {
             }
             // wait the others
             barrier.wait();
-            //calculate the error and update the solution vectors
-
-#ifdef PARALLEL_REDUCE
-#pragma simd
-            for (ulong i = works[id].start; i < works[id].stop; ++i) {
-                myerror += std::abs(solutions[i] - old_solutions[i]);
-            }
-            //save the error, spin-lock on the global variable
-            while (!flag.test_and_set(std::memory_order_relaxed)) {}
-            error += myerror;
-            flag.clear(std::memory_order_relaxed);
-            barrier.wait();
-#endif
 
             // similar to #pragma omp once, execute it only one time
             if (!flag.test_and_set()) {
-
-#ifndef PARALLEL_REDUCE
+#pragma simd
                 for (ulong i = 0; i < solutions.size(); ++i) {
-                    error += std::abs(solutions[i] - old_solutions[i]);
+                    error += abs(solutions[i] - old_solutions[i]);
                 }
-#endif
-
                 error /= (float) solutions.size();
                 termination = error <= tolerance;
                 std::swap(solutions, old_solutions);
@@ -123,10 +103,10 @@ namespace {
 }
 
 vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,
-                            const ulong _iterations, const float _tolerance, const ulong _nWorkers) {
+                            const ulong _iterations, const float _tolerance, const ulong _nWorkers, ofstream &out) {
 
     start_time = Time::now();
-    // setting up shared data strucutures
+    // setting up shared data structures
     coefficients = _coefficients;
     terms = _terms;
     iterations = _iterations;
@@ -155,9 +135,9 @@ vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients
     // wait for the termination
     for (auto &th: threads)
         th.join();
-
     total_time = Time::now();
-    print_metrics(iteration, error);
 
+    write_csv(iteration, error, out);
+    print_metrics(iteration, error);
     return solutions;
 }

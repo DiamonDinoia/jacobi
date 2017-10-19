@@ -9,6 +9,7 @@
 #include <chrono>
 #include <string>
 #include <algorithm>
+#include <fstream>
 
 
 typedef unsigned long ulong;
@@ -21,11 +22,31 @@ auto static start_time = Time::now();
 auto static init_time = Time::now();
 auto static total_time = Time::now();
 
-const auto iterations_computed = "iterations_computed: ";
-const auto error_s = "error: ";
-const auto computation_time_s = "computation_time: ";
-const auto initi_time_s = "initialization_time: ";
+const auto iterations_computed = "iterations computed";
+const auto error_s = "error";
+const auto computation_time_s = "computation time";
+const auto init_time_s = "initialization time";
 
+
+static const auto sequential_string = "sequential";
+static const auto omp_string = "omp";
+static const auto thread_string = "thread";
+static const auto fastflow_string = "fastflow";
+static const auto matrix_size = "matrix_size";
+static const auto algorithm = "algorithm";
+static const auto nworkers = "workers";
+
+
+static const float range = 10000.f;
+
+enum METHODS {
+    SEQUENTIAL,
+    OPENMP,
+    THREADS,
+    FASTFLOW
+};
+
+static auto method = SEQUENTIAL;
 
 /**
  * utility function implementing the jacobi method in order to find one solution
@@ -87,11 +108,37 @@ void generate_diagonal_dominant_matrix(const ulong size, std::vector<std::vector
 
 
 template<typename T>
-void print_metrics(const ulong iterations, const T error) {
-    std::cout << iterations_computed << iterations + 1 << std::endl;
-    std::cout << error_s << error << std::endl;
-    std::cout << initi_time_s << dsec(init_time - start_time).count() << std::endl;
-    std::cout << computation_time_s << dsec(total_time - init_time).count() << std::endl;
+void write_csv(const ulong iterations, const T error, std::ofstream &outfile) {
+    if (!outfile.is_open())
+        return;
+    outfile << dsec(init_time - start_time).count() << ',' << dsec(total_time - init_time).count() << ','
+            << iterations + 1 << ',' << error << '\n';
+    outfile.flush();
 }
+
+template<typename T>
+T check_error(const std::vector<std::vector<T>> &matrix, const std::vector<T> &terms, const std::vector<T> &solution) {
+    T tmp = solution[0] - solution[0];
+    T error = tmp;
+
+    for (int i = 0; i < matrix.size(); ++i) {
+        tmp = terms[i];
+        for (int j = 0; j < matrix[i].size(); ++j) {
+            tmp -= (matrix[i][j] * solution[j]);
+        }
+        error += tmp;
+    }
+    return error;
+}
+
+template<typename T>
+void print_metrics(const ulong iterations, const T error) {
+    std::cout << iterations_computed << ' ' << iterations + 1 << std::endl;
+    std::cout << error_s << ' ' << error << std::endl;
+    std::cout << init_time_s << ' ' << dsec(init_time - start_time).count() << std::endl;
+    std::cout << computation_time_s << ' ' << dsec(total_time - init_time).count() << std::endl;
+}
+
+
 
 #endif //JACOBI_UTILS_H

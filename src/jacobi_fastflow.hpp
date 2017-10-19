@@ -24,7 +24,7 @@
  */
 template<typename T>
 std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
-                               const ulong iterations, const T tolerance, const ulong workers) {
+                               const ulong iterations, const T tolerance, const ulong workers, std::ofstream &out) {
 
     start_time = Time::now();
     std::vector<float> old_solutions __attribute__((aligned(64)));
@@ -59,6 +59,7 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
     }
     total_time = Time::now();
     print_metrics(iteration, error);
+    write_csv(iteration, error, out);
     return solutions;
 }
 

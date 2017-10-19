@@ -23,7 +23,7 @@
  */
 template<typename T>
 std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const std::vector<T> terms,
-                          const ulong iterations, const T tolerance, const ulong workers) {
+                          const ulong iterations, const T tolerance, const ulong workers, std::ofstream &out) {
 
     start_time = Time::now();
 
@@ -60,6 +60,8 @@ std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const 
     std::swap(solutions, old_solutions);
 
     print_metrics(iteration, error);
+    write_csv(iteration, error, out);
+
     return solutions;
 }
 

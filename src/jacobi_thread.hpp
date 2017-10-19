@@ -20,7 +20,7 @@
  * @return solution vector
  */
 std::vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients, const std::vector<float> &_terms,
-                                 const ulong _iterations, const float _tolerance, const ulong nWorkers);
+                                 ulong _iterations, float _tolerance, ulong nWorkers, std::ofstream &out);
 
 
 #endif //JACOBI_JACOBI_THREAD_H
