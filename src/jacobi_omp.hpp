@@ -1,6 +1,4 @@
-//
-// Created by marco on 9/15/17.
-//
+
 
 #ifndef JACOBI_JACOBI_OMP_HPP
 #define JACOBI_JACOBI_OMP_HPP

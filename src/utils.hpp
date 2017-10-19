@@ -1,6 +1,4 @@
-//
-// Created by marco on 9/2/17.
-//
+
 
 #ifndef JACOBI_UTILS_H
 #define JACOBI_UTILS_H

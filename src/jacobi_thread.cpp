@@ -1,6 +1,4 @@
-//
-// Created by marco on 9/5/17.
-//
+
 
 #include <atomic>
 #include <iostream>

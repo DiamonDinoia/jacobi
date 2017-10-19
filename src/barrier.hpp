@@ -1,6 +1,4 @@
-//
-// Created by marco on 9/6/17.
-//
+
 
 #ifndef JACOBI_BARRIER_H
 #define JACOBI_BARRIER_H
