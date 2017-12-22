@@ -19,7 +19,7 @@ total_time = "total time"
 iterations = "iterations computed"
 error = "error"
 
-directory = "./data"
+directory = "../data"
 filetype = "*.csv"
 
 labels = [algorithm, matrix_size, workers, init_time, comp_time, iterations, error]
@@ -48,7 +48,8 @@ def line_graph(frame, label, xticklabel, ylabel, xlabel, figname):
     plt.legend(col, loc='best')
     plt.ylabel(xlabel)
     plt.xlabel(ylabel)
-    plt.title(figname)
+    tmp = figname.split(' ')
+    plt.title(tmp[0])
     plt.savefig(figname)
     plt.clf()
     # plt.show()
@@ -65,27 +66,35 @@ metrics = ['iterations', 'size', 'workers', 'xxl']
 def get_data(metric, filename, label, xticklabel, ylabel, xlabel, figname):
     frame = pd.read_csv(filename)
     if omp in filename:
-        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join([omp, figname]))
+        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join(['OpenMP', figname]))
         omp_data[metric] = frame
     if thread in filename:
-        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join([thread, figname]))
+        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join(['Threads', figname]))
         thread_data[metric] = frame
     if fastflow in filename:
-        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join([fastflow, figname]))
+        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join(['FastFlow', figname]))
         ff_data[metric] = frame
     if sequential in filename:
-        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join([sequential, figname]))
+        line_graph(frame, label, xticklabel, ylabel, xlabel, ' '.join(['Sequential', figname]))
         sequential_data[metric] = frame
 
 
 def line_metric_graph(frame, label, xticklabel, ylabel, xlabel, figname):
-    frame[label].plot(kind='line', linewidth=2.0, rot=0, grid=True)
-    if label == 'efficiency':
-        plt.ylim([0, 1])
+    a = frame[label].plot(kind='line', linewidth=2.0, rot=0, grid=True)
+    plt.ylim(0, 1)
+    a.set_xticks(frame[xticklabel])
+    locator = ticker.AutoLocator()
+    a.xaxis.set_major_locator(locator)
+    ticks = a.get_xticks()
+    if ticks[0] == 0:
+        ticks[0] = 1
+    a.set_xticks(ticks)
+    plt.xlim(1, len(frame[xticklabel]))
     plt.ylabel(xlabel)
     plt.xlabel(ylabel)
-    plt.title(figname if 'xxl' not in figname else 'efficiency')
-    plt.savefig(figname)
+    tmp = figname.split(' ')
+    plt.title(tmp[0])
+    plt.savefig(' '.join(tmp))
     plt.clf()
     # plt.show()
 
@@ -112,9 +121,9 @@ def main():
     for frame in frames:
         frame[workers]['ideal time'] = [time / x for x in frame[workers][workers]]
         frame[workers]['efficiency'] = frame[workers]['ideal time'] / frame[workers][total_time]
-    line_metric_graph(omp_data[workers], 'efficiency', workers, 'efficiency', workers, 'omp efficiency')
-    line_metric_graph(thread_data[workers], 'efficiency', workers, 'efficiency', workers, 'thread efficiency')
-    line_metric_graph(ff_data[workers], 'efficiency', workers, 'efficiency', workers, 'fastflow efficiency')
+    line_metric_graph(omp_data[workers], 'efficiency', workers, 'efficiency', workers, 'OpenMP efficiency')
+    line_metric_graph(thread_data[workers], 'efficiency', workers, 'efficiency', workers, 'Threads efficiency')
+    line_metric_graph(ff_data[workers], 'efficiency', workers, 'efficiency', workers, 'FastFlow efficiency')
 
     time = sequential_data['size'][sequential_data['size']['matrix_size'] == 16384][total_time].iloc[0]
 
@@ -122,9 +131,9 @@ def main():
         frame['xxl']['ideal time'] = [time / x for x in frame['xxl'][workers]]
         frame['xxl']['efficiency'] = frame['xxl']['ideal time'] / frame['xxl'][total_time]
         # print frame
-    line_metric_graph(omp_data['xxl'], 'efficiency', workers, 'efficiency', workers, 'omp xxl efficiency')
-    line_metric_graph(thread_data['xxl'], 'efficiency', workers, 'efficiency', workers, 'thread xxl efficiency')
-    line_metric_graph(ff_data['xxl'], 'efficiency', workers, 'efficiency', workers, 'fastflow xxl efficiency')
+    line_metric_graph(omp_data['xxl'], 'efficiency', workers, 'efficiency', workers, 'OpenMP xxl efficiency')
+    line_metric_graph(thread_data['xxl'], 'efficiency', workers, 'efficiency', workers, 'Threads xxl efficiency')
+    line_metric_graph(ff_data['xxl'], 'efficiency', workers, 'efficiency', workers, 'FastFlow xxl efficiency')
 
 
 if __name__ == "__main__":
