@@ -21,7 +21,7 @@ auto static init_time = Time::now();
 auto static total_time = Time::now();
 
 const auto iterations_computed = "iterations computed";
-const auto error_s = "error";
+const auto error_s = "delta";
 const auto computation_time_s = "computation time";
 const auto init_time_s = "initialization time";
 

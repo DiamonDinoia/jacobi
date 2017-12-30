@@ -28,11 +28,12 @@ char *filename;
 ofstream outfile;
 auto to_csv = false;
 auto debug = false;
-
+auto flag = false;
+unsigned int seed = 42;
 
 void print_helper() {
     cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>]  << [-p <filename>]"
-         << "[-i <iterations>] " << "[-t <tolerance>]" << endl << endl;
+         << "[-i <iterations>] " << "[-t <tolerance> " << "[-c <seed>] >>" << endl << endl;
     cout << "The required arguments are:" << endl;
     cout << '\t' << "algorithm" << '\t' << "indicate the algorithm executed, possible values:" << endl;
     cout << "\t\t" << sequential_string << ": sequential jacobi algorithm" << endl;
@@ -46,7 +47,9 @@ void print_helper() {
     cout << '\t' << "[-s]" << '\t' << "size of the matrix, default 1024" << endl;
     cout << '\t' << "[-i]" << '\t' << "iteration performed, default 50" << endl;
     cout << '\t' << "[-t]" << '\t' << "error tolerated, default -1" << endl;
+    cout << '\t' << "[-c]" << '\t' << "seed used to generate the matrix, default 42" << endl;
     flush(cout);
+    if (flag) exit(0);
     exit(EINVAL);
 }
 
@@ -64,8 +67,9 @@ void parse_args(const int argc, char *const argv[]) {
     else print_helper();
 
     errno = 0;
+
     int c;
-    while ((c = getopt(argc, argv, "w:s:i:t:p:d")) != -1) {
+    while ((c = getopt(argc, argv, "w:s:i:t:p:c:dh")) != -1) {
         switch (c) {
             case 'w':
                 workers = static_cast<ulong> (strtol(optarg, nullptr, 10));
@@ -87,6 +91,12 @@ void parse_args(const int argc, char *const argv[]) {
             case 'd':
                 debug = true;
                 break;
+            case 'c':
+                seed = static_cast<unsigned int> (strtol(optarg, nullptr, 10));
+                break;
+            case 'h':
+                flag = true;
+                print_helper();
             default:
                 print_helper();
         }
@@ -100,7 +110,7 @@ int main(const int argc, char *const argv[]) {
 
     parse_args(argc, argv);
 
-    srand(42);
+    srand((int) seed);
 
     vector<float> solution;
 
@@ -150,10 +160,10 @@ int main(const int argc, char *const argv[]) {
     }
 
     if (debug) {
-        cout << "Solution: ";
+        cout << "solution: ";
         print_solution(solution);
         float error = check_error(matrix, terms, solution);
-        cout << "Real error: " << error << endl;
+        cout << "error: " << error << endl;
     }
 
     outfile.flush();

@@ -17,7 +17,7 @@ init_time = "initialization time"
 comp_time = "computation time"
 total_time = "total time"
 iterations = "iterations computed"
-error = "error"
+error = "delta"
 
 directory = "./data"
 filetype = "*.csv"
