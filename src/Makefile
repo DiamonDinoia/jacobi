@@ -4,9 +4,9 @@ iterations=100
 tolerance=-1.f
 
 CXX=icc
-CXXFLAGS=-O3 -pthread -mmic -std=c++14 -openmp -openmp-link=static -I $(ffdir)
+CXXFLAGS=-O3 -pthread -mmic -std=c++11 -DWITHOMP -openmp -openmp-link=static -I $(ffdir)
 
-.PHONY: main clean cleanall test benchmark run run_extended test_no_omp benchmark_no_omp
+.PHONY: main clean cleanall
 
 main: main.cpp jacobi_thread.o
 	$(CXX) $(CXXFLAGS) $? -o $@
