@@ -103,7 +103,7 @@ int main(const int argc, char *const argv[]) {
 
 void print_helper() {
     cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>]  << [-p <filename>]"
-         << "[-i <iterations>] " << "[-t <tolerance> " << "[-c <seed>] >>" << endl << endl;
+         << "[-i <iterations>] " << "[-t <tolerance> " << "[-h] " <<"[-d] " << "[-c <seed>] >>" << endl << endl;
     cout << "The required arguments are:" << endl;
     cout << '\t' << "algorithm " << "indicates the algorithm executed taken from the following list" << endl;
     cout << "\t\t" << sequential_string << ": sequential jacobi algorithm" << endl;
@@ -115,10 +115,13 @@ void print_helper() {
     cout << "The optional arguments are:" << endl;
     cout << '\t' << "[-w]" << '\t' << "number of threads used, default 8" << endl;
     cout << '\t' << "[-s]" << '\t' << "size of the matrix, default 1024" << endl;
+    cout << '\t' << "[-p]" << '\t' << "filename in case of csv exporting, default null" << endl;
     cout << '\t' << "[-i]" << '\t' << "iteration performed, default 50" << endl;
     cout << '\t' << "[-t]" << '\t' << "error tolerated, default -1" << endl;
-    cout << '\t' << "[-c]" << '\t' << "seed used to generate the matrix, default 42" << endl;
+    cout << '\t' << "[-d]" << '\t' << "enable debug prints, solution and error" << endl;
     cout << '\t' << "[-h]" << '\t' << "prints the helper" << endl;
+    cout << '\t' << "[-c]" << '\t' << "seed used to generate the matrix, default 42" << endl;
+
 
     flush(cout);
     if (flag) exit(0);

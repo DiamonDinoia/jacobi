@@ -136,6 +136,6 @@ vector<float> thread_jacobi(const std::vector<std::vector<float>> &_coefficients
     total_time = Time::now();
 
     write_csv(iteration, error, out);
-    print_metrics(iteration, error);
+    print_metrics(iteration-1, error);
     return solutions;
 }
