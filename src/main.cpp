@@ -105,7 +105,7 @@ void print_helper() {
     cout << "Usage: " << "main " << "<algorithm> " << "[-w <workers>] " << "[-s <size>]  << [-p <filename>]"
          << "[-i <iterations>] " << "[-t <tolerance> " << "[-c <seed>] >>" << endl << endl;
     cout << "The required arguments are:" << endl;
-    cout << '\t' << "algorithm" << '\t' << "indicate the algorithm executed, possible values:" << endl;
+    cout << '\t' << "algorithm " << "indicates the algorithm executed taken from the following list" << endl;
     cout << "\t\t" << sequential_string << ": sequential jacobi algorithm" << endl;
     #ifdef WITHOMP
     cout << "\t\t" << omp_string << ": OpenMP multi-thread implementation of jacobi algorithm" << endl;
@@ -118,6 +118,8 @@ void print_helper() {
     cout << '\t' << "[-i]" << '\t' << "iteration performed, default 50" << endl;
     cout << '\t' << "[-t]" << '\t' << "error tolerated, default -1" << endl;
     cout << '\t' << "[-c]" << '\t' << "seed used to generate the matrix, default 42" << endl;
+    cout << '\t' << "[-h]" << '\t' << "prints the helper" << endl;
+
     flush(cout);
     if (flag) exit(0);
     exit(EINVAL);
