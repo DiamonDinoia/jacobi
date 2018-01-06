@@ -47,7 +47,7 @@ std::vector<T> serial_jacobi(const std::vector<std::vector<T>> coefficients, con
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }
         //compute the error
-#pragma simd
+        #pragma simd
         for (ulong i = 0; i < solutions.size(); ++i)
             error += std::abs(solutions[i] - old_solutions[i]);
 

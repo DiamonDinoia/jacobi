@@ -47,7 +47,7 @@ std::vector<T> fastflow_jacobi(const std::vector<std::vector<T>> coefficients, c
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }, workers);
 
-#pragma simd
+        #pragma simd
         for (ulong i = 0; i < solutions.size(); ++i)
             error += std::abs(solutions[i] - old_solutions[i]);
 

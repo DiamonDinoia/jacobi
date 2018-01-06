@@ -42,7 +42,7 @@ std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const 
         //calculate solutions
         error = tolerance - tolerance;
 
-#pragma omp parallel for schedule(static)
+        #pragma omp parallel for schedule(static)
         for (ulong i = 0; i < solutions.size(); ++i) {
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }

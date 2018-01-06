@@ -67,7 +67,7 @@ namespace {
             //calculate solutions
             error = 0.f;
             barrier.wait();
-#pragma ivdep
+            #pragma ivdep
             for (ulong i = works[id].start; i < works[id].stop; ++i) {
                 solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
             }
@@ -76,7 +76,7 @@ namespace {
 
             // similar to #pragma omp once, execute it only one time
             if (!flag.test_and_set()) {
-#pragma simd
+                #pragma simd
                 for (ulong i = 0; i < solutions.size(); ++i) {
                     error += abs(solutions[i] - old_solutions[i]);
                 }
