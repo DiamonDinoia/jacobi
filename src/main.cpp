@@ -18,7 +18,7 @@ vector<vector<float>> matrix __attribute__((aligned(64)));
 vector<float> terms __attribute__((aligned(64)));
 
 
-void parse_args(const int argc, char *const argv[]);
+void parse_args(int argc, char *const argv[]);
 
 ulong size = 1024;
 ulong workers = 8;
@@ -121,8 +121,6 @@ void print_helper() {
     cout << '\t' << "[-d]" << '\t' << "enable debug prints, solution and error" << endl;
     cout << '\t' << "[-h]" << '\t' << "prints the helper" << endl;
     cout << '\t' << "[-c]" << '\t' << "seed used to generate the matrix, default 42" << endl;
-
-
     flush(cout);
     if (flag) exit(0);
     exit(EINVAL);

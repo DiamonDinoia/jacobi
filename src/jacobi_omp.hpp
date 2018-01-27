@@ -38,7 +38,6 @@ std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const 
     init_time = Time::now();
     ulong iteration;
     for (iteration = 0; iteration < iterations; ++iteration) {
-
         //calculate solutions
         error = tolerance - tolerance;
 
@@ -47,15 +46,16 @@ std::vector<T> omp_jacobi(const std::vector<std::vector<T>> coefficients, const 
             solutions[i] = solution_find(coefficients[i], old_solutions, terms[i], i);
         }
         //compute the error
+        #pragma simd
         for (ulong i = 0; i < solutions.size(); ++i) {
             error += std::abs(solutions[i] - old_solutions[i]);
         }
         // check the error
         error /= solutions.size();
         if (error <= tolerance) break;
+        std::swap(solutions, old_solutions);
     }
     total_time = Time::now();
-    std::swap(solutions, old_solutions);
 
     print_metrics(iteration, error);
     write_csv(iteration, error, out);

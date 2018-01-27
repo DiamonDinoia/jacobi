@@ -21,7 +21,7 @@ else()
     set(CMAKE_CXX_COMPILER "g++")
 endif()
 
-if(omp)
+if(ON)
     add_compile_options("-DWITHOMP")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -openmp-link=static")
 endif()
